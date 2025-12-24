@@ -122,17 +122,10 @@ const grid = document.getElementById("grid");
 async function carregar() {
   grid.innerHTML = "";
 
-  const { data, error } = await sb
+  // 1️⃣ ASSISTINDO AGORA
+  const { data: assistindo, error } = await sb
     .from("assistindo_agora")
-    .select(`
-      item_id,
-      titulo,
-      tipo,
-      usuario_email,
-      filmes:filmes (
-        capa_url
-      )
-    `)
+    .select("item_id, titulo, tipo, usuario_email")
     .eq("status", "assistindo");
 
   if (error) {
@@ -141,26 +134,40 @@ async function carregar() {
     return;
   }
 
-  if (!data.length) {
+  if (!assistindo.length) {
     grid.innerHTML = `<div class="empty">Ninguém assistindo agora</div>`;
     return;
   }
 
-  // AGRUPA POR ITEM + EMAIL ÚNICO
+  // 2️⃣ BUSCA CAPAS
+  const itemIds = [...new Set(assistindo.map(a => a.item_id))];
+
+  const { data: filmes } = await sb
+    .from("filmes")
+    .select("id, capa_url")
+    .in("id", itemIds);
+
+  const capas = {};
+  (filmes || []).forEach(f => {
+    capas[f.id] = f.capa_url;
+  });
+
+  // 3️⃣ AGRUPA (1 POR EMAIL)
   const map = {};
 
-  data.forEach(r => {
+  assistindo.forEach(r => {
     if (!map[r.item_id]) {
       map[r.item_id] = {
         titulo: r.titulo,
         tipo: r.tipo,
-        capa: r.filmes?.capa_url || "",
+        capa: capas[r.item_id] || "",
         emails: new Set()
       };
     }
     map[r.item_id].emails.add(r.usuario_email);
   });
 
+  // 4️⃣ RENDER
   Object.values(map).forEach(i => {
     grid.innerHTML += `
       <div class="card">
