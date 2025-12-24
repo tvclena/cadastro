@@ -2,9 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Painel • Streaming</title>
+<title>Painel • Streaming ADMIN</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -13,26 +12,18 @@
   --card:#1c1c1e;
   --accent:#e50914;
   --green:#00c853;
+  --yellow:#ff9800;
   --text:#fff;
   --muted:#aaa;
 }
-
 *{margin:0;padding:0;box-sizing:border-box}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter,Arial,sans-serif;
-}
+body{background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
 
 /* HEADER */
-header{
-  padding:22px 32px;
-  font-size:22px;
-  font-weight:800;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+header{padding:22px 32px;font-size:22px;font-weight:800}
+
+/* SECTION */
+.section-title{padding:20px 32px 0;font-size:18px;font-weight:700}
 
 /* KPIS */
 .kpis{
@@ -41,227 +32,300 @@ header{
   gap:16px;
   padding:0 32px 20px;
 }
-
-.kpi{
-  background:var(--card);
-  border-radius:14px;
-  padding:16px;
-}
-
-.kpi span{
-  font-size:12px;
-  color:var(--muted);
-}
-
-.kpi strong{
-  display:block;
-  font-size:26px;
-  margin-top:6px;
-}
+.kpi{background:var(--card);border-radius:14px;padding:16px}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi strong{display:block;font-size:26px;margin-top:6px}
 
 /* GRID */
 .grid{
-  padding:20px 32px 40px;
+  padding:20px 32px;
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
   gap:20px;
 }
-
 .card{
   position:relative;
   background:var(--card);
   border-radius:14px;
   overflow:hidden;
-  transition:.25s;
 }
-
-.card:hover{
-  transform:scale(1.04);
-  box-shadow:0 20px 40px rgba(0,0,0,.6);
-}
-
-.card img{
-  width:100%;
-  height:260px;
-  object-fit:cover;
-}
-
+.card img{width:100%;height:260px;object-fit:cover}
 .overlay{
   position:absolute;
   inset:0;
-  background:linear-gradient(
-    to top,
-    rgba(0,0,0,.9),
-    rgba(0,0,0,.35),
-    rgba(0,0,0,0)
-  );
+  background:linear-gradient(to top,rgba(0,0,0,.9),rgba(0,0,0,.2));
 }
-
 .info{
   position:absolute;
   bottom:0;
-  width:100%;
   padding:14px;
+  width:100%;
+}
+.title{font-size:14px;font-weight:600}
+
+/* FILME ACTION */
+.actions{
+  position:absolute;
+  top:10px;
+  right:10px;
+}
+.actions button{
+  background:#000;
+  border:none;
+  color:#fff;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
 }
 
-.title{
-  font-size:14px;
-  font-weight:600;
-  margin-bottom:6px;
+/* TABLE */
+.table-container{padding:20px 32px 60px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px}
+th,td{padding:14px;border-bottom:1px solid #2a2a2a;font-size:13px;white-space:nowrap}
+th{background:#161616;color:#ccc}
+.user-cell{display:flex;align-items:center;gap:10px}
+.user-cell img{width:36px;height:36px;border-radius:50%;object-fit:cover}
+
+/* STATUS */
+.status{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.aprovado{background:var(--green)}
+.bloqueado{background:var(--accent)}
+
+/* BUTTON */
+button{cursor:pointer}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
 }
-
-.badges{
-  display:flex;
-  gap:6px;
-  flex-wrap:wrap;
+.modal-content{
+  background:var(--card);
+  padding:20px;
+  border-radius:14px;
+  width:420px;
 }
-
-.badge{
-  padding:4px 8px;
-  font-size:11px;
-  border-radius:999px;
-  background:#222;
+.modal-content h3{margin-bottom:10px}
+.modal-content input{
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
+  background:#111;
+  border:none;
+  color:#fff;
+  border-radius:8px;
 }
-
-.badge.red{background:var(--accent)}
-.badge.green{background:var(--green)}
-
-.section-title{
-  padding:10px 32px 0;
-  font-size:18px;
+.modal-content button{
+  width:100%;
+  padding:10px;
+  background:var(--green);
+  border:none;
+  border-radius:8px;
   font-weight:700;
 }
-
-.empty{
-  padding:60px;
-  text-align:center;
-  color:var(--muted);
+.modal-close{
+  background:#333;
+  margin-top:6px;
 }
+.empty{padding:60px;text-align:center;color:var(--muted)}
 </style>
 </head>
 
 <body>
 
-<header>
-  📺 Painel Streaming
-</header>
+<header>📺 Painel Streaming • ADMIN</header>
 
 <!-- KPIs -->
 <div class="kpis">
-  <div class="kpi"><span>👀 Assistindo agora</span><strong id="kpiAgora">0</strong></div>
-  <div class="kpi"><span>👤 Usuários únicos</span><strong id="kpiUsuarios">0</strong></div>
-  <div class="kpi"><span>🎬 Total de plays</span><strong id="kpiPlays">0</strong></div>
-  <div class="kpi"><span>📺 Títulos assistidos</span><strong id="kpiTitulos">0</strong></div>
+  <div class="kpi"><span>👤 Usuários</span><strong id="kpiUsers">0</strong></div>
+  <div class="kpi"><span>✅ Ativos</span><strong id="kpiAtivos">0</strong></div>
+  <div class="kpi"><span>💰 Receita</span><strong id="kpiReceita">R$ 0</strong></div>
+  <div class="kpi"><span>🎬 Filmes</span><strong id="kpiFilmes">0</strong></div>
 </div>
 
+<!-- ASSISTINDO AGORA -->
 <div class="section-title">🔴 Assistindo agora</div>
-<div id="grid" class="grid"></div>
+<div id="gridAgora" class="grid"></div>
+
+<!-- FILMES -->
+<div class="section-title">🎬 Filmes cadastrados</div>
+<div id="gridFilmes" class="grid"></div>
+
+<!-- USUÁRIOS -->
+<div class="section-title">👤 Usuários cadastrados</div>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Usuário</th>
+<th>Email</th>
+<th>Status</th>
+<th>Assinatura</th>
+<th>Valor</th>
+<th>Ações</th>
+</tr>
+</thead>
+<tbody id="listaUsuarios"></tbody>
+</table>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modalUser" class="modal">
+  <div class="modal-content">
+    <h3>Editar usuário</h3>
+    <input id="editNome" placeholder="Nome">
+    <input id="editWhatsapp" placeholder="WhatsApp">
+    <input id="editValor" placeholder="Valor assinatura">
+    <button onclick="salvarUsuario()">Salvar</button>
+    <button class="modal-close" onclick="fecharModal()">Cancelar</button>
+  </div>
+</div>
 
 <script>
-/* ================= SUPABASE ================= */
+/* SUPABASE */
 const sb = supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-const grid = document.getElementById("grid");
+const gridAgora = document.getElementById("gridAgora");
+const gridFilmes = document.getElementById("gridFilmes");
+const listaUsuarios = document.getElementById("listaUsuarios");
 
-/* ================= KPIs ================= */
-const kpiAgora = document.getElementById("kpiAgora");
-const kpiUsuarios = document.getElementById("kpiUsuarios");
-const kpiPlays = document.getElementById("kpiPlays");
-const kpiTitulos = document.getElementById("kpiTitulos");
+let usuarioEditando = null;
 
-/* ================= LOAD ================= */
-async function carregarPainel() {
+/* LOAD */
+async function carregarADM(){
 
-  /* 🔴 ASSISTINDO AGORA */
-  const { data: assistindo } = await sb
+  /* ASSISTINDO AGORA */
+  const {data:assistindo} = await sb
     .from("assistindo_agora")
-    .select("item_id, titulo, tipo, usuario_email")
-    .eq("status", "assistindo");
+    .select("item_id,titulo,tipo,usuario_email")
+    .eq("status","assistindo");
 
-  if (!assistindo || !assistindo.length) {
-    grid.innerHTML = `<div class="empty">Ninguém assistindo agora</div>`;
-    kpiAgora.textContent = 0;
-  } else {
-
-    const itemIds = [...new Set(assistindo.map(a => a.item_id))];
-
-    const { data: filmes } = await sb
-      .from("filmes")
-      .select("id, capa_url")
-      .in("id", itemIds);
-
+  gridAgora.innerHTML = "";
+  if(!assistindo?.length){
+    gridAgora.innerHTML = `<div class="empty">Ninguém assistindo agora</div>`;
+  }else{
+    const ids = [...new Set(assistindo.map(a=>a.item_id))];
+    const {data:filmesAgora} = await sb.from("filmes").select("id,capa_url").in("id",ids);
     const capas = {};
-    (filmes || []).forEach(f => capas[f.id] = f.capa_url);
+    filmesAgora?.forEach(f=>capas[f.id]=f.capa_url);
 
     const map = {};
-
-    assistindo.forEach(r => {
-      if (!map[r.item_id]) {
-        map[r.item_id] = {
-          titulo: r.titulo,
-          tipo: r.tipo,
-          capa: capas[r.item_id] || "",
-          emails: new Set()
-        };
+    assistindo.forEach(a=>{
+      if(!map[a.item_id]){
+        map[a.item_id]={titulo:a.titulo,tipo:a.tipo,capa:capas[a.item_id],emails:new Set()};
       }
-      map[r.item_id].emails.add(r.usuario_email);
+      map[a.item_id].emails.add(a.usuario_email);
     });
 
-    kpiAgora.textContent = assistindo
-      .map(a => a.usuario_email)
-      .filter((v,i,a)=>a.indexOf(v)===i).length;
-
-    grid.innerHTML = "";
-
-    Object.values(map).forEach(i => {
-      grid.innerHTML += `
+    Object.values(map).forEach(i=>{
+      gridAgora.innerHTML += `
         <div class="card">
           <img src="${i.capa}">
           <div class="overlay"></div>
           <div class="info">
             <div class="title">${i.titulo}</div>
-            <div class="badges">
-              <span class="badge red">${i.tipo}</span>
-              <span class="badge green">👀 ${i.emails.size}</span>
-            </div>
+            <small>👀 ${i.emails.size}</small>
           </div>
-        </div>
-      `;
+        </div>`;
     });
   }
 
-  /* 📊 HISTÓRICO */
-  const { data: historico } = await sb
-    .from("historico_assistidos")
-    .select("usuario_email, item_id");
+  /* FILMES */
+  const {data:filmes} = await sb.from("filmes").select("*").order("created_at",{ascending:false});
+  document.getElementById("kpiFilmes").textContent = filmes?.length || 0;
+  gridFilmes.innerHTML = "";
+  filmes?.forEach(f=>{
+    gridFilmes.innerHTML += `
+      <div class="card">
+        <img src="${f.capa_url}">
+        <div class="actions">
+          <button onclick="excluirFilme('${f.id}')">🗑️</button>
+        </div>
+        <div class="overlay"></div>
+        <div class="info">
+          <div class="title">${f.titulo}</div>
+        </div>
+      </div>`;
+  });
 
-  if (historico && historico.length) {
-    kpiPlays.textContent = historico.length;
+  /* USUÁRIOS */
+  const {data:usuarios} = await sb.from("usuarios").select("*").order("created_at",{ascending:false});
+  let ativos = 0;
+  let receita = 0;
 
-    kpiUsuarios.textContent = [
-      ...new Set(historico.map(h => h.usuario_email))
-    ].length;
+  listaUsuarios.innerHTML = "";
+  usuarios?.forEach(u=>{
+    if(u.status==="aprovado"){
+      ativos++;
+      receita += Number(u.valor_assinatura||0);
+    }
+    listaUsuarios.innerHTML += `
+      <tr>
+        <td>
+          <div class="user-cell">
+            <img src="${u.avatar_url || 'https://via.placeholder.com/40'}">
+            <strong>${u.nome_usuario}</strong>
+          </div>
+        </td>
+        <td>${u.email}</td>
+        <td><span class="status ${u.status}">${u.status}</span></td>
+        <td>${u.tipo_assinatura}</td>
+        <td>R$ ${u.valor_assinatura || 0}</td>
+        <td>
+          <button onclick='editarUsuario(${JSON.stringify(u)})'>✏️</button>
+          <button onclick="toggleStatus('${u.id}','${u.status}')">🚫</button>
+        </td>
+      </tr>`;
+  });
 
-    kpiTitulos.textContent = [
-      ...new Set(historico.map(h => h.item_id))
-    ].length;
-  }
+  document.getElementById("kpiUsers").textContent = usuarios?.length || 0;
+  document.getElementById("kpiAtivos").textContent = ativos;
+  document.getElementById("kpiReceita").textContent = "R$ " + receita.toFixed(2);
 }
 
-/* ================= REALTIME ================= */
-sb.channel("assistindo-agora")
-  .on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "assistindo_agora" },
-    carregarPainel
-  )
-  .subscribe();
+/* AÇÕES */
+function editarUsuario(u){
+  usuarioEditando = u;
+  editNome.value = u.nome_usuario;
+  editWhatsapp.value = u.whatsapp;
+  editValor.value = u.valor_assinatura;
+  modalUser.style.display = "flex";
+}
+function fecharModal(){
+  modalUser.style.display = "none";
+}
+async function salvarUsuario(){
+  await sb.from("usuarios").update({
+    nome_usuario: editNome.value,
+    whatsapp: editWhatsapp.value,
+    valor_assinatura: editValor.value
+  }).eq("id", usuarioEditando.id);
+
+  fecharModal();
+  carregarADM();
+}
+async function toggleStatus(id,status){
+  await sb.from("usuarios").update({
+    status: status==="aprovado"?"bloqueado":"aprovado"
+  }).eq("id",id);
+  carregarADM();
+}
+async function excluirFilme(id){
+  if(!confirm("Excluir filme?")) return;
+  await sb.from("filmes").delete().eq("id",id);
+  carregarADM();
+}
 
 /* INIT */
-carregarPainel();
+carregarADM();
 </script>
 
 </body>
