@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Painel • Assistindo Agora</title>
+<title>Painel • Streaming</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,6 +12,7 @@
   --bg:#0f0f10;
   --card:#1c1c1e;
   --accent:#e50914;
+  --green:#00c853;
   --text:#fff;
   --muted:#aaa;
 }
@@ -23,14 +24,44 @@ body{
   font-family:Inter,Arial,sans-serif;
 }
 
+/* HEADER */
 header{
-  padding:20px 32px;
+  padding:22px 32px;
   font-size:22px;
-  font-weight:700;
+  font-weight:800;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 
+/* KPIS */
+.kpis{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px;
+  padding:0 32px 20px;
+}
+
+.kpi{
+  background:var(--card);
+  border-radius:14px;
+  padding:16px;
+}
+
+.kpi span{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.kpi strong{
+  display:block;
+  font-size:26px;
+  margin-top:6px;
+}
+
+/* GRID */
 .grid{
-  padding:20px 32px;
+  padding:20px 32px 40px;
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
   gap:20px;
@@ -60,8 +91,8 @@ header{
   inset:0;
   background:linear-gradient(
     to top,
-    rgba(0,0,0,.85),
-    rgba(0,0,0,.2),
+    rgba(0,0,0,.9),
+    rgba(0,0,0,.35),
     rgba(0,0,0,0)
   );
 }
@@ -93,7 +124,13 @@ header{
 }
 
 .badge.red{background:var(--accent)}
-.badge.green{background:#00c853}
+.badge.green{background:var(--green)}
+
+.section-title{
+  padding:10px 32px 0;
+  font-size:18px;
+  font-weight:700;
+}
 
 .empty{
   padding:60px;
@@ -105,8 +142,19 @@ header{
 
 <body>
 
-<header>👀 Assistindo agora</header>
+<header>
+  📺 Painel Streaming
+</header>
 
+<!-- KPIs -->
+<div class="kpis">
+  <div class="kpi"><span>👀 Assistindo agora</span><strong id="kpiAgora">0</strong></div>
+  <div class="kpi"><span>👤 Usuários únicos</span><strong id="kpiUsuarios">0</strong></div>
+  <div class="kpi"><span>🎬 Total de plays</span><strong id="kpiPlays">0</strong></div>
+  <div class="kpi"><span>📺 Títulos assistidos</span><strong id="kpiTitulos">0</strong></div>
+</div>
+
+<div class="section-title">🔴 Assistindo agora</div>
 <div id="grid" class="grid"></div>
 
 <script>
@@ -118,71 +166,89 @@ const sb = supabase.createClient(
 
 const grid = document.getElementById("grid");
 
-/* ================= LOAD ================= */
-async function carregar() {
-  grid.innerHTML = "";
+/* ================= KPIs ================= */
+const kpiAgora = document.getElementById("kpiAgora");
+const kpiUsuarios = document.getElementById("kpiUsuarios");
+const kpiPlays = document.getElementById("kpiPlays");
+const kpiTitulos = document.getElementById("kpiTitulos");
 
-  // 1️⃣ ASSISTINDO AGORA
-  const { data: assistindo, error } = await sb
+/* ================= LOAD ================= */
+async function carregarPainel() {
+
+  /* 🔴 ASSISTINDO AGORA */
+  const { data: assistindo } = await sb
     .from("assistindo_agora")
     .select("item_id, titulo, tipo, usuario_email")
     .eq("status", "assistindo");
 
-  if (error) {
-    console.error(error);
-    grid.innerHTML = `<div class="empty">Erro ao carregar</div>`;
-    return;
-  }
-
-  if (!assistindo.length) {
+  if (!assistindo || !assistindo.length) {
     grid.innerHTML = `<div class="empty">Ninguém assistindo agora</div>`;
-    return;
-  }
+    kpiAgora.textContent = 0;
+  } else {
 
-  // 2️⃣ BUSCA CAPAS
-  const itemIds = [...new Set(assistindo.map(a => a.item_id))];
+    const itemIds = [...new Set(assistindo.map(a => a.item_id))];
 
-  const { data: filmes } = await sb
-    .from("filmes")
-    .select("id, capa_url")
-    .in("id", itemIds);
+    const { data: filmes } = await sb
+      .from("filmes")
+      .select("id, capa_url")
+      .in("id", itemIds);
 
-  const capas = {};
-  (filmes || []).forEach(f => {
-    capas[f.id] = f.capa_url;
-  });
+    const capas = {};
+    (filmes || []).forEach(f => capas[f.id] = f.capa_url);
 
-  // 3️⃣ AGRUPA (1 POR EMAIL)
-  const map = {};
+    const map = {};
 
-  assistindo.forEach(r => {
-    if (!map[r.item_id]) {
-      map[r.item_id] = {
-        titulo: r.titulo,
-        tipo: r.tipo,
-        capa: capas[r.item_id] || "",
-        emails: new Set()
-      };
-    }
-    map[r.item_id].emails.add(r.usuario_email);
-  });
+    assistindo.forEach(r => {
+      if (!map[r.item_id]) {
+        map[r.item_id] = {
+          titulo: r.titulo,
+          tipo: r.tipo,
+          capa: capas[r.item_id] || "",
+          emails: new Set()
+        };
+      }
+      map[r.item_id].emails.add(r.usuario_email);
+    });
 
-  // 4️⃣ RENDER
-  Object.values(map).forEach(i => {
-    grid.innerHTML += `
-      <div class="card">
-        <img src="${i.capa}">
-        <div class="overlay"></div>
-        <div class="info">
-          <div class="title">${i.titulo}</div>
-          <div class="badges">
-            <span class="badge red">${i.tipo}</span>
-            <span class="badge green">👀 ${i.emails.size}</span>
+    kpiAgora.textContent = assistindo
+      .map(a => a.usuario_email)
+      .filter((v,i,a)=>a.indexOf(v)===i).length;
+
+    grid.innerHTML = "";
+
+    Object.values(map).forEach(i => {
+      grid.innerHTML += `
+        <div class="card">
+          <img src="${i.capa}">
+          <div class="overlay"></div>
+          <div class="info">
+            <div class="title">${i.titulo}</div>
+            <div class="badges">
+              <span class="badge red">${i.tipo}</span>
+              <span class="badge green">👀 ${i.emails.size}</span>
+            </div>
           </div>
         </div>
-      </div>
-    `;
-  });
+      `;
+    });
+  }
+
+  /* 📊 HISTÓRICO */
+  const { data: historico } = await sb
+    .from("historico_assistidos")
+    .select("usuario_email, item_id");
+
+  if (historico && historico.length) {
+    kpiPlays.textContent = historico.length;
+
+    kpiUsuarios.textContent = [
+      ...new Set(historico.map(h => h.usuario_email))
+    ].length;
+
+    kpiTitulos.textContent = [
+      ...new Set(historico.map(h => h.item_id))
+    ].length;
+  }
 }
 
 /* ================= REALTIME ================= */
@@ -190,12 +256,12 @@ sb.channel("assistindo-agora")
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "assistindo_agora" },
-    () => carregar()
+    carregarPainel
   )
   .subscribe();
 
 /* INIT */
-carregar();
+carregarPainel();
 </script>
 
 </body>
