@@ -285,7 +285,7 @@ btnLogin.onclick = async () => {
   if (data.status === "aprovado" || agora <= expira) {
     localStorage.setItem("usuario_email", data.email);
     console.log("LOGIN OK:", data.email); // 👈 debug
-    location.replace("index.html"); // 👈 evita histórico bugado
+location.replace("https://www.clena.com.br");
   } else {
     msg.textContent = "Seu teste expirou. Aguarde aprovação.";
   }
