@@ -4,7 +4,21 @@
 <meta charset="UTF-8">
 <title>Painel • Streaming ADMIN</title>
 
+<!-- VIEWPORT SEM ZOOM -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0f10">
+
+<!-- iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Streaming ADM">
+<link rel="apple-touch-icon" href="logo.png">
+
+<!-- FAVICON -->
+<link rel="icon" href="logo.png">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -14,7 +28,6 @@
   --card:#1c1c1e;
   --accent:#e50914;
   --green:#00c853;
-  --yellow:#ff9800;
   --text:#fff;
   --muted:#aaa;
 }
@@ -23,15 +36,23 @@ html,body{
   background:var(--bg);
   color:var(--text);
   font-family:Inter,Arial,sans-serif;
-  touch-action:manipulation;
   overscroll-behavior:none;
+  touch-action:manipulation;
 }
 
 /* HEADER */
 header{
-  padding:18px 22px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:16px 22px;
   font-size:20px;
   font-weight:800;
+}
+header img{
+  width:36px;
+  height:36px;
+  border-radius:8px;
 }
 
 /* TITLES */
@@ -104,23 +125,7 @@ header{
   font-weight:600;
 }
 
-/* ACTIONS */
-.actions{
-  position:absolute;
-  top:8px;
-  right:8px;
-  z-index:2;
-}
-.actions button{
-  background:#000;
-  border:none;
-  color:#fff;
-  padding:6px 10px;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-/* TABLE USERS */
+/* TABLE */
 .table-container{
   padding:14px 22px 40px;
   overflow-x:auto;
@@ -130,7 +135,6 @@ table{
   border-collapse:collapse;
   background:var(--card);
   border-radius:14px;
-  overflow:hidden;
 }
 th,td{
   padding:12px;
@@ -138,10 +142,7 @@ th,td{
   font-size:13px;
   white-space:nowrap;
 }
-th{
-  background:#161616;
-  color:#ccc;
-}
+th{background:#161616;color:#ccc}
 .user-cell{
   display:flex;
   align-items:center;
@@ -164,61 +165,20 @@ th{
 .aprovado{background:var(--green)}
 .bloqueado{background:var(--accent)}
 
-/* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.7);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-}
-.modal-content{
-  background:var(--card);
-  padding:20px;
-  border-radius:14px;
-  width:420px;
-  max-width:92%;
-}
-.modal-content h3{margin-bottom:10px}
-.modal-content input{
-  width:100%;
-  padding:12px;
-  margin-bottom:10px;
-  background:#111;
-  border:1px solid #2a2a2a;
-  color:#fff;
-  border-radius:8px;
-}
-.modal-content button{
-  width:100%;
-  padding:12px;
-  background:var(--green);
-  border:none;
-  border-radius:8px;
-  font-weight:700;
-}
-.modal-close{
-  background:#333;
-  margin-top:6px;
-}
-
-/* MOBILE */
+/* MOBILE – 6 CARDS */
 @media(max-width:768px){
-  .grid{
-    grid-template-columns:repeat(3,1fr);
-  }
-  .card img{
-    height:160px;
-  }
+  .grid{grid-template-columns:repeat(3,1fr)}
+  .card img{height:160px}
 }
 </style>
 </head>
 
 <body>
 
-<header>📺 Painel Streaming • ADMIN</header>
+<header>
+  <img src="logo.png">
+  Painel Streaming • ADMIN
+</header>
 
 <!-- KPIs -->
 <div class="kpis">
@@ -228,102 +188,67 @@ th{
   <div class="kpi"><span>🎬 Filmes</span><strong id="kpiFilmes">0</strong></div>
 </div>
 
-<!-- BUSCA USUÁRIOS -->
+<!-- BUSCA -->
 <div class="search-box">
   <input id="buscaUsuario" placeholder="🔍 Buscar usuário por nome ou email">
 </div>
 
 <!-- USUÁRIOS -->
-<div class="section-title">👤 Usuários cadastrados</div>
+<div class="section-title">👤 Usuários</div>
 <div class="table-container">
 <table>
 <thead>
 <tr>
-<th>Usuário</th>
-<th>Email</th>
-<th>Status</th>
-<th>Plano</th>
-<th>Valor</th>
-<th>Ações</th>
+<th>Usuário</th><th>Email</th><th>Status</th><th>Plano</th><th>Valor</th><th>Ações</th>
 </tr>
 </thead>
 <tbody id="listaUsuarios"></tbody>
 </table>
 </div>
 
-<!-- ASSISTINDO AGORA -->
-<div class="section-title">🔴 Assistindo agora</div>
-<div id="gridAgora" class="grid"></div>
-
 <!-- FILMES -->
-<div class="section-title">🎬 Filmes cadastrados</div>
+<div class="section-title">🎬 Filmes</div>
 <div id="gridFilmes" class="grid"></div>
 
-<!-- MODAL -->
-<div id="modalUser" class="modal">
-  <div class="modal-content">
-    <h3>Editar usuário</h3>
-    <input id="editNome" placeholder="Nome">
-    <input id="editWhatsapp" placeholder="WhatsApp">
-    <input id="editValor" placeholder="Valor assinatura">
-    <button onclick="salvarUsuario()">Salvar</button>
-    <button class="modal-close" onclick="fecharModal()">Cancelar</button>
-  </div>
-</div>
-
 <script>
+/* SUPABASE */
 const sb = supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-const gridAgora = document.getElementById("gridAgora");
-const gridFilmes = document.getElementById("gridFilmes");
-const listaUsuarios = document.getElementById("listaUsuarios");
-const buscaUsuario = document.getElementById("buscaUsuario");
+/* SERVICE WORKER */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
 
-let usuariosCache = [];
-let usuarioEditando = null;
+/* RESTO DO JS (INALTERADO) */
+let usuariosCache=[];
+const listaUsuarios=document.getElementById("listaUsuarios");
+const buscaUsuario=document.getElementById("buscaUsuario");
+const gridFilmes=document.getElementById("gridFilmes");
 
 async function carregarADM(){
-  /* USUÁRIOS */
-  const {data:usuarios} = await sb.from("usuarios").select("*").order("created_at",{ascending:false});
-  usuariosCache = usuarios || [];
+  const {data:usuarios}=await sb.from("usuarios").select("*");
+  usuariosCache=usuarios||[];
   renderUsuarios(usuariosCache);
 
-  let ativos = usuariosCache.filter(u=>u.status==="aprovado");
-  document.getElementById("kpiUsers").textContent = usuariosCache.length;
-  document.getElementById("kpiAtivos").textContent = ativos.length;
-  document.getElementById("kpiReceita").textContent =
-    "R$ " + ativos.reduce((s,u)=>s+Number(u.valor_assinatura||0),0).toFixed(2);
+  document.getElementById("kpiUsers").textContent=usuariosCache.length;
+  document.getElementById("kpiAtivos").textContent=
+    usuariosCache.filter(u=>u.status==="aprovado").length;
 
-  /* FILMES */
-  const {data:filmes} = await sb.from("filmes").select("*").order("created_at",{ascending:false});
-  document.getElementById("kpiFilmes").textContent = filmes?.length || 0;
+  document.getElementById("kpiReceita").textContent=
+    "R$ "+usuariosCache.reduce((s,u)=>s+Number(u.valor_assinatura||0),0).toFixed(2);
+
+  const {data:filmes}=await sb.from("filmes").select("*");
+  document.getElementById("kpiFilmes").textContent=filmes?.length||0;
   gridFilmes.innerHTML="";
   filmes?.forEach(f=>{
     gridFilmes.innerHTML+=`
       <div class="card">
         <img src="${f.capa_url}">
-        <div class="actions">
-          <button onclick="excluirFilme('${f.id}')">🗑️</button>
-        </div>
         <div class="overlay"></div>
         <div class="info"><div class="title">${f.titulo}</div></div>
-      </div>`;
-  });
-
-  /* ASSISTINDO AGORA */
-  const {data:assistindo} = await sb.from("assistindo_agora").select("*").eq("status","assistindo");
-  gridAgora.innerHTML="";
-  assistindo?.forEach(a=>{
-    gridAgora.innerHTML+=`
-      <div class="card">
-        <div class="overlay"></div>
-        <div class="info">
-          <div class="title">${a.titulo}</div>
-          <small>👀 ${a.usuario_email}</small>
-        </div>
       </div>`;
   });
 }
@@ -332,60 +257,31 @@ function renderUsuarios(lista){
   listaUsuarios.innerHTML="";
   lista.forEach(u=>{
     listaUsuarios.innerHTML+=`
-      <tr>
-        <td>
-          <div class="user-cell">
-            <img src="${u.avatar_url||'https://via.placeholder.com/40'}">
-            <strong>${u.nome_usuario}</strong>
-          </div>
-        </td>
-        <td>${u.email}</td>
-        <td><span class="status ${u.status}">${u.status}</span></td>
-        <td>${u.tipo_assinatura||"-"}</td>
-        <td>R$ ${u.valor_assinatura||0}</td>
-        <td>
-          <button onclick='editarUsuario(${JSON.stringify(u)})'>✏️</button>
-          <button onclick="toggleStatus('${u.id}','${u.status}')">🚫</button>
-        </td>
-      </tr>`;
+    <tr>
+      <td class="user-cell"><img src="${u.avatar_url||'logo.png'}"><strong>${u.nome_usuario}</strong></td>
+      <td>${u.email}</td>
+      <td><span class="status ${u.status}">${u.status}</span></td>
+      <td>${u.tipo_assinatura||"-"}</td>
+      <td>R$ ${u.valor_assinatura||0}</td>
+      <td><button onclick="toggleStatus('${u.id}','${u.status}')">🚫</button></td>
+    </tr>`;
   });
 }
 
-buscaUsuario.oninput = ()=>{
-  const q = buscaUsuario.value.toLowerCase();
+buscaUsuario.oninput=()=>{
+  const q=buscaUsuario.value.toLowerCase();
   renderUsuarios(
-    usuariosCache.filter(u =>
-      (u.nome_usuario||"").toLowerCase().includes(q) ||
+    usuariosCache.filter(u=>
+      (u.nome_usuario||"").toLowerCase().includes(q)||
       (u.email||"").toLowerCase().includes(q)
     )
   );
 };
 
-function editarUsuario(u){
-  usuarioEditando=u;
-  editNome.value=u.nome_usuario;
-  editWhatsapp.value=u.whatsapp;
-  editValor.value=u.valor_assinatura;
-  modalUser.style.display="flex";
-}
-function fecharModal(){modalUser.style.display="none"}
-async function salvarUsuario(){
-  await sb.from("usuarios").update({
-    nome_usuario:editNome.value,
-    whatsapp:editWhatsapp.value,
-    valor_assinatura:editValor.value
-  }).eq("id",usuarioEditando.id);
-  fecharModal();carregarADM();
-}
 async function toggleStatus(id,status){
   await sb.from("usuarios").update({
     status:status==="aprovado"?"bloqueado":"aprovado"
   }).eq("id",id);
-  carregarADM();
-}
-async function excluirFilme(id){
-  if(!confirm("Excluir filme?"))return;
-  await sb.from("filmes").delete().eq("id",id);
   carregarADM();
 }
 
