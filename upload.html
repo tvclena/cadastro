@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>SESSÃO 99 • Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<style>
+:root{
+  --bg:#05070f;
+  --panel:#0f1424;
+  --card:#151a30;
+  --input:#0b1020;
+  --accent:#6366f1;
+  --ok:#22c55e;
+  --err:#ef4444;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:linear-gradient(180deg,#05060c,#07090f);
+  color:var(--text);
+  font-family:Inter,Arial,sans-serif;
+}
+.wrapper{
+  max-width:1200px;
+  margin:32px auto;
+  padding:24px;
+}
+.panel{
+  background:var(--panel);
+  border-radius:18px;
+  padding:24px;
+}
+label{display:block;margin-top:14px;font-weight:600}
+input,textarea,select{
+  width:100%;
+  margin-top:6px;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:var(--input);
+  color:#fff;
+}
+textarea{resize:vertical}
+button{
+  width:100%;
+  margin-top:18px;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  background:var(--accent);
+  color:#fff;
+  font-size:15px;
+  cursor:pointer;
+}
+.hidden{display:none}
+.status{margin-bottom:14px;font-weight:600}
+.ok{color:var(--ok)}
+.err{color:var(--err)}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<div id="status" class="status">Inicializando…</div>
+
+<div class="panel">
+  <h2>Novo Registro</h2>
+
+  <label>Título *</label>
+  <input id="titulo">
+
+  <label>Descrição</label>
+  <textarea id="descricao"></textarea>
+
+  <label>Categoria</label>
+  <input id="categoria">
+
+  <label>URL da Capa *</label>
+  <input id="capa">
+
+  <label>ID do Vídeo *</label>
+  <input id="videoId" placeholder="ex: Stranger.Things.S05E03">
+
+  <label>Tipo *</label>
+  <select id="tipo" onchange="toggleSerie()">
+    <option value="filme">Filme</option>
+    <option value="serie">Série</option>
+  </select>
+
+  <div id="serieBox" class="hidden">
+    <label>Nome da Série</label>
+    <input id="serie_nome">
+
+    <label>Temporada</label>
+    <input id="temporada" type="number">
+
+    <label>Episódio</label>
+    <input id="episodio" type="number">
+  </div>
+
+  <button onclick="salvar()">Salvar</button>
+</div>
+
+</div>
+
+<script>
+const supabaseClient = window.supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+const statusEl = document.getElementById("status");
+
+function toggleSerie(){
+  const tipo = document.getElementById("tipo").value;
+  document.getElementById("serieBox").classList.toggle("hidden", tipo !== "serie");
+}
+
+async function salvar(){
+  const payload = {
+    titulo: titulo.value.trim(),
+    descricao: descricao.value.trim(),
+    categoria: categoria.value.trim(),
+    capa_url: capa.value.trim(),
+    video_url: videoId.value.trim(),
+    tipo: tipo.value,
+    ativo: true
+  };
+
+  if(!payload.titulo || !payload.capa_url || !payload.video_url){
+    statusEl.textContent = "❌ Preencha os campos obrigatórios";
+    statusEl.className = "status err";
+    return;
+  }
+
+  if(payload.tipo === "serie"){
+    payload.serie_nome = serie_nome.value || null;
+    payload.temporada = temporada.value ? Number(temporada.value) : null;
+    payload.episodio = episodio.value ? Number(episodio.value) : null;
+  }
+
+  statusEl.textContent = "⏳ Salvando no Supabase…";
+  statusEl.className = "status";
+
+  const { error } = await supabaseClient.from("filmes").insert(payload);
+
+  if(error){
+    statusEl.textContent = "❌ Erro: " + error.message;
+    statusEl.className = "status err";
+    return;
+  }
+
+  statusEl.textContent = "✅ Registro salvo com sucesso";
+  statusEl.className = "status ok";
+}
+</script>
+
+</body>
+</html>
