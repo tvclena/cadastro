@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Perfil | CLENA</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+body{
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(70% 60% at 50% 25%, #18224a 0%, #0b1020 65%);
+  color:#fff;
+  padding:32px 20px;
+}
+
+:root{
+  --primary:#38bdf8;
+  --secondary:#7c3aed;
+  --muted:#94a3b8;
+  --error:#f87171;
+  --success:#22c55e;
+}
+
+/* HEADER */
+header{
+  max-width:720px;
+  margin:0 auto 30px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+header h1{
+  font-size:26px;
+  font-weight:900;
+}
+header span{color:#22c55e}
+
+header button{
+  background:#e50914;
+  border:none;
+  padding:10px 16px;
+  border-radius:12px;
+  color:#fff;
+  cursor:pointer;
+  font-weight:700;
+}
+
+/* CARD */
+.card{
+  max-width:720px;
+  margin:auto;
+  background:rgba(18,26,50,.9);
+  padding:36px;
+  border-radius:22px;
+  box-shadow:0 40px 90px rgba(0,0,0,.7);
+}
+
+/* FORM */
+.group{margin-bottom:18px}
+label{
+  display:block;
+  font-size:14px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+input{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #273469;
+  background:rgba(0,0,0,.35);
+  color:#fff;
+}
+
+input[disabled]{
+  opacity:.6;
+}
+
+/* BUTTON */
+.btn{
+  width:100%;
+  padding:16px;
+  margin-top:14px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  color:#fff;
+  font-size:16px;
+  font-weight:800;
+  cursor:pointer;
+  position:relative;
+}
+
+.loading{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  border-radius:16px;
+  font-weight:800;
+}
+
+/* MSG */
+.msg{
+  margin-top:16px;
+  font-size:14px;
+}
+.msg.error{color:var(--error)}
+.msg.success{color:var(--success)}
+</style>
+</head>
+
+<body>
+
+<script>
+const usuarioEmail = localStorage.getItem("usuario_email");
+if(!usuarioEmail){
+  location.replace("login.html");
+}
+</script>
+
+<header>
+  <h1>CLENA <span>Perfil</span></h1>
+  <button onclick="logout()">Sair</button>
+</header>
+
+<div class="card">
+
+  <div class="group">
+    <label>Email</label>
+    <input id="email" disabled>
+  </div>
+
+  <div class="group">
+    <label>CPF</label>
+    <input id="cpf">
+  </div>
+
+  <div class="group">
+    <label>WhatsApp</label>
+    <input id="whats">
+  </div>
+
+  <div class="group">
+    <label>Nova senha</label>
+    <input id="senha" type="password" placeholder="Deixe vazio para não alterar">
+  </div>
+
+  <button class="btn" onclick="salvar()">
+    Salvar alterações
+    <div class="loading" id="loading">Salvando…</div>
+  </button>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co",
+  "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
+);
+
+const loading=document.getElementById("loading");
+const msg=document.getElementById("msg");
+
+async function carregar(){
+  const { data } = await sb
+    .from("usuarios")
+    .select("*")
+    .eq("email",usuarioEmail)
+    .single();
+
+  email.value=data.email;
+  cpf.value=data.cpf || "";
+  whats.value=data.whatsapp || "";
+}
+
+async function salvar(){
+  loading.style.display="flex";
+  msg.textContent="";
+
+  const payload={
+    cpf:cpf.value.replace(/\D/g,""),
+    whatsapp:whats.value.replace(/\D/g,"")
+  };
+
+  if(senha.value.trim()){
+    payload.senha=senha.value;
+  }
+
+  const { error } = await sb
+    .from("usuarios")
+    .update(payload)
+    .eq("email",usuarioEmail);
+
+  loading.style.display="none";
+
+  if(error){
+    msg.textContent=error.message;
+    msg.className="msg error";
+    return;
+  }
+
+  senha.value="";
+  msg.textContent="Perfil atualizado com sucesso ✔";
+  msg.className="msg success";
+}
+
+function logout(){
+  localStorage.removeItem("usuario_email");
+  location.replace("login.html");
+}
+
+carregar();
+</script>
+
+</body>
+</html>

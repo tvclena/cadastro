@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login | CLENA</title>
+
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+html,body{
+  margin:0;
+  height:100%;
+  touch-action:manipulation; /* 🔒 bloqueia zoom */
+}
+
+:root{
+  --bg:#0b1020;
+  --surface:#121a32;
+  --card:#18224a;
+  --primary:#38bdf8;
+  --secondary:#7c3aed;
+  --muted:#94a3b8;
+  --border:#273469;
+  --error:#f87171;
+  --success:#22c55e;
+}
+
+body{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(70% 60% at 50% 25%, #18224a 0%, #0b1020 65%);
+  color:#fff;
+}
+
+/* CARD */
+.container{
+  width:420px;
+  max-width:92%;
+  background:rgba(18,26,50,.85);
+  backdrop-filter:blur(16px);
+  padding:42px;
+  border-radius:22px;
+  box-shadow:0 40px 90px rgba(0,0,0,.7);
+}
+
+/* LOGO */
+.logo{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  margin-bottom:32px;
+}
+.logo-text{
+  font-size:30px;
+  font-weight:900;
+  letter-spacing:.6px;
+}
+
+/* FORM */
+.group{margin-bottom:20px}
+label{
+  font-size:14px;
+  color:var(--muted);
+  margin-bottom:6px;
+  display:block
+}
+
+input{
+  width:100%;
+  padding:14px 16px;
+  font-size:15px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.35);
+  color:#fff;
+}
+input:focus{
+  outline:none;
+  border-color:var(--primary)
+}
+
+.btn{
+  width:100%;
+  padding:16px;
+  margin-top:10px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  color:#fff;
+  font-size:16px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.link{
+  margin-top:16px;
+  text-align:center;
+  font-size:14px;
+  text-decoration:underline;
+  cursor:pointer;
+  color:var(--muted);
+}
+
+.msg{
+  margin-top:14px;
+  min-height:20px;
+  font-size:14px
+}
+.msg.error{color:var(--error)}
+.msg.success{color:var(--success)}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+
+.modal-box{
+  width:420px;
+  max-width:92%;
+  background:var(--surface);
+  padding:36px;
+  border-radius:22px;
+}
+
+/* SUCESSO */
+.success-anim{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+  margin-top:20px;
+  animation:fadeUp .4s ease;
+}
+.check{
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  background:var(--success);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:38px;
+  color:#fff;
+  animation:pop .5s ease;
+}
+@keyframes pop{
+  0%{transform:scale(.3);opacity:0}
+  80%{transform:scale(1.1)}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="container">
+  <div class="logo">
+    <svg width="96" height="96" viewBox="0 0 120 120">
+      <defs>
+        <linearGradient id="gradC" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8"/>
+          <stop offset="100%" stop-color="#7c3aed"/>
+        </linearGradient>
+      </defs>
+      <path d="M90 30 A40 40 0 1 0 90 90"
+        fill="none"
+        stroke="url(#gradC)"
+        stroke-width="14"
+        stroke-linecap="round"/>
+    </svg>
+    <div class="logo-text">clena</div>
+  </div>
+
+  <div class="group">
+    <label>Email</label>
+    <input id="email" type="email">
+  </div>
+
+  <div class="group">
+    <label>Senha</label>
+    <input id="senha" type="password">
+  </div>
+
+  <button id="btnLogin" class="btn">Entrar</button>
+  <div class="link" id="abrirCadastro">Criar conta</div>
+  <div class="msg" id="msg"></div>
+</div>
+
+<!-- CADASTRO -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h2>Criar conta</h2>
+
+    <div class="group">
+      <label>Email</label>
+      <input id="c_email" type="email">
+    </div>
+
+    <div class="group">
+      <label>CPF</label>
+      <input id="c_cpf" inputmode="numeric">
+    </div>
+
+    <div class="group">
+      <label>WhatsApp</label>
+      <input id="c_whats" inputmode="numeric">
+    </div>
+
+    <div class="group">
+      <label>Senha</label>
+      <input id="c_senha" type="password">
+    </div>
+
+    <div class="group">
+      <label>Confirmar senha</label>
+      <input id="c_confirma" type="password">
+    </div>
+
+    <button id="btnCadastro" class="btn">Cadastrar</button>
+    <div class="link" id="fecharCadastro">Cancelar</div>
+    <div class="msg" id="msgCadastro"></div>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co",
+  "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
+);
+
+/* MODAL */
+abrirCadastro.onclick=()=>modal.style.display="flex";
+fecharCadastro.onclick=()=>modal.style.display="none";
+
+/* MÁSCARAS */
+c_cpf.oninput=e=>{
+  e.target.value=e.target.value.replace(/\D/g,"")
+    .replace(/(\d{3})(\d)/,"$1.$2")
+    .replace(/(\d{3})(\d)/,"$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/,"$1-$2")
+    .slice(0,14);
+};
+c_whats.oninput=e=>{
+  e.target.value=e.target.value.replace(/\D/g,"")
+    .replace(/^(\d{2})(\d)/,"($1) $2")
+    .replace(/(\d{5})(\d)/,"$1-$2")
+    .slice(0,15);
+};
+
+/* LOGIN */
+btnLogin.onclick = async ()=>{
+  msg.textContent="";
+  const { data } = await sb
+    .from("usuarios")
+    .select("email,senha")
+    .eq("email",email.value.trim())
+    .maybeSingle();
+
+  if(!data){
+    msg.textContent="Usuário não encontrado";
+    msg.className="msg error";
+    return;
+  }
+  if(data.senha!==senha.value){
+    msg.textContent="Senha incorreta";
+    msg.className="msg error";
+    return;
+  }
+
+  localStorage.setItem("usuario_email",data.email);
+  location.replace("index.html");
+};
+
+/* CADASTRO */
+btnCadastro.onclick = async ()=>{
+  msgCadastro.textContent="";
+  if(c_senha.value!==c_confirma.value){
+    msgCadastro.textContent="As senhas não conferem";
+    msgCadastro.className="msg error";
+    return;
+  }
+
+  const { error } = await sb.from("usuarios").insert({
+    email:c_email.value.trim(),
+    cpf:c_cpf.value.replace(/\D/g,""),
+    whatsapp:c_whats.value.replace(/\D/g,""),
+    senha:c_senha.value
+  });
+
+  if(error){
+    if(error.code==="23505"){
+      msgCadastro.textContent="Este email já está cadastrado";
+    }else if(error.code==="23514"){
+      msgCadastro.textContent="A senha deve ter no mínimo 4 caracteres";
+    }else{
+      msgCadastro.textContent=error.message;
+    }
+    msgCadastro.className="msg error";
+    return;
+  }
+
+  msgCadastro.innerHTML=`
+    <div class="success-anim">
+      <div class="check">✓</div>
+      <strong>Conta criada com sucesso</strong>
+    </div>
+  `;
+  msgCadastro.className="msg success";
+
+  setTimeout(()=>{
+    modal.style.display="none";
+    email.value=c_email.value;
+    senha.value=c_senha.value;
+    msg.textContent="Conta criada! Clique em Entrar 🚀";
+    msg.className="msg success";
+  },2000);
+};
+</script>
+
+</body>
+</html>
