@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>CLENA TV</title>
+<title>CLENA TV • Filmes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -13,7 +13,7 @@
   --panel:#0f1424;
   --card:#151a30;
   --input:#0b1020;
-  --accent:#6366f1;
+  --accent:#e50914;
   --ok:#22c55e;
   --err:#ef4444;
   --text:#e5e7eb;
@@ -60,6 +60,7 @@ input,textarea,select{
   font-size:13px;
 }
 textarea{resize:none;height:60px}
+
 button{
   margin-top:12px;
   padding:12px;
@@ -69,6 +70,29 @@ button{
   color:#fff;
   font-size:14px;
   cursor:pointer;
+}
+
+/* CAPA */
+.capa-preview{
+  margin-top:8px;
+  width:100%;
+  height:160px;
+  border-radius:10px;
+  background:#000;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px dashed #333;
+}
+.capa-preview img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.capa-preview span{
+  font-size:12px;
+  color:var(--muted);
 }
 
 /* LIST */
@@ -149,27 +173,24 @@ button{
   <input id="categoria" list="categorias">
 
   <datalist id="categorias">
-    <option>Romance</option>
-    <option>Suspense</option>
-    <option>Terror</option>
-    <option>Ação</option>
-    <option>Aventura</option>
-    <option>Drama</option>
-    <option>Comédia</option>
-    <option>Ficção Científica</option>
-    <option>Fantasia</option>
-    <option>Documentário</option>
-    <option>Animação</option>
-    <option>Policial</option>
-    <option>Thriller</option>
-    <option>Mistério</option>
-    <option>Guerra</option>
-    <option>Musical</option>
-    <option>Biografia</option>
+    <option>Romance</option><option>Suspense</option><option>Terror</option>
+    <option>Ação</option><option>Aventura</option><option>Drama</option>
+    <option>Comédia</option><option>Ficção Científica</option>
+    <option>Fantasia</option><option>Documentário</option>
+    <option>Animação</option><option>Policial</option>
+    <option>Thriller</option><option>Mistério</option>
+    <option>Guerra</option><option>Musical</option><option>Biografia</option>
   </datalist>
 
-  <label>URL da Capa</label>
-  <input id="capa">
+  <label>URL da Capa (opcional)</label>
+  <input id="capaUrl" oninput="previewCapaUrl()">
+
+  <label>Ou Arquivo da Capa</label>
+  <input type="file" id="capaFile" accept="image/*" onchange="uploadCapa()">
+
+  <div class="capa-preview" id="capaPreview">
+    <span>Preview da capa</span>
+  </div>
 
   <label>ID do Vídeo</label>
   <input id="videoId">
@@ -183,14 +204,11 @@ button{
   <div id="serieBox" class="hidden">
     <label>Série</label>
     <input id="serie_nome">
-    <label>Temp.</label>
+    <label>Temporada</label>
     <input id="temporada" type="number">
-    <label>Epis.</label>
+    <label>Episódio</label>
     <input id="episodio" type="number">
   </div>
-
-  <label>Views</label>
-  <input id="views" disabled>
 
   <button onclick="salvar()">Salvar</button>
 </div>
@@ -217,22 +235,67 @@ button{
 </div>
 
 <script>
-const supabaseClient = window.supabase.createClient(
+const sb = supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
 let filmes=[];
+let capaFinal="";
 const lista=document.getElementById("lista");
 const statusEl=document.getElementById("status");
 
+/* PREVIEW VIA URL */
+function previewCapaUrl(){
+  const url=capaUrl.value.trim();
+  if(!url) return;
+  capaFinal=url;
+  capaPreview.innerHTML=`<img src="${url}">`;
+}
+
+/* UPLOAD PARA SUPABASE STORAGE */
+async function uploadCapa(){
+  const file=capaFile.files[0];
+  if(!file) return;
+
+  // preview local
+  const reader=new FileReader();
+  reader.onload=e=>{
+    capaPreview.innerHTML=`<img src="${e.target.result}">`;
+  };
+  reader.readAsDataURL(file);
+
+  const filePath=`filmes/${Date.now()}-${file.name.replace(/\s+/g,"")}`;
+
+  const { error } = await sb
+    .storage
+    .from("capas")
+    .upload(filePath, file, {
+      upsert:true,
+      contentType:file.type
+    });
+
+  if(error){
+    alert("Erro ao enviar capa");
+    return;
+  }
+
+  const { data } = sb
+    .storage
+    .from("capas")
+    .getPublicUrl(filePath);
+
+  capaFinal=data.publicUrl;
+}
+
+/* TOGGLE SÉRIE */
 function toggleSerie(){
   serieBox.classList.toggle("hidden", tipo.value!=="serie");
 }
 
+/* CARREGAR LISTA */
 async function carregar(){
-  const {data,error}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
-  if(error){statusEl.textContent=error.message;return;}
+  const {data}=await sb.from("filmes").select("*").order("created_at",{ascending:false});
   filmes=data||[];
   statusEl.textContent=`${filmes.length} registros`;
   render();
@@ -249,49 +312,34 @@ function render(){
       &&(!t||f.tipo===t)
       &&(!c||f.categoria?.toLowerCase().includes(c));
   }).forEach(f=>{
-    const d=document.createElement("div");
-    d.className="card";
-    d.innerHTML=`
-      <img src="${f.capa_url}">
-      <div class="box">
-        <h4>${f.titulo}</h4>
-        <small>${f.categoria||""}</small><br>
-        <small>👁 ${f.total_visualizacoes||0}</small>
-        <div class="actions">
-          <button onclick='editar(${JSON.stringify(f)})'>✏️</button>
-          <button class="toggle" onclick='toggleAtivo("${f.id}",${f.ativo})'>${f.ativo?"ON":"OFF"}</button>
-          <button class="danger" onclick='excluir("${f.id}")'>🗑️</button>
+    lista.innerHTML+=`
+      <div class="card">
+        <img src="${f.capa_url}">
+        <div class="box">
+          <h4>${f.titulo}</h4>
+          <small>${f.categoria||""}</small>
         </div>
       </div>`;
-    lista.appendChild(d);
   });
 }
 
-function editar(f){
-  editId.value=f.id;
-  titulo.value=f.titulo;
-  descricao.value=f.descricao||"";
-  categoria.value=f.categoria||"";
-  capa.value=f.capa_url;
-  videoId.value=f.video_url;
-  tipo.value=f.tipo;
-  views.value=f.total_visualizacoes||0;
-  toggleSerie();
-  serie_nome.value=f.serie_nome||"";
-  temporada.value=f.temporada||"";
-  episodio.value=f.episodio||"";
-}
-
+/* SALVAR */
 async function salvar(){
+  if(!capaFinal){
+    alert("Informe a capa por URL ou arquivo");
+    return;
+  }
+
   const payload={
     titulo:titulo.value,
     descricao:descricao.value,
     categoria:categoria.value,
-    capa_url:capa.value,
+    capa_url:capaFinal,
     video_url:videoId.value,
     tipo:tipo.value,
     ativo:true
   };
+
   if(tipo.value==="serie"){
     payload.serie_nome=serie_nome.value;
     payload.temporada=temporada.value||null;
@@ -299,21 +347,12 @@ async function salvar(){
   }
 
   if(editId.value){
-    await supabaseClient.from("filmes").update(payload).eq("id",editId.value);
+    await sb.from("filmes").update(payload).eq("id",editId.value);
   }else{
-    await supabaseClient.from("filmes").insert(payload);
+    await sb.from("filmes").insert(payload);
   }
-  location.reload();
-}
 
-async function excluir(id){
-  if(!confirm("Excluir registro?"))return;
-  await supabaseClient.from("filmes").delete().eq("id",id);
-  carregar();
-}
-async function toggleAtivo(id,ativo){
-  await supabaseClient.from("filmes").update({ativo:!ativo}).eq("id",id);
-  carregar();
+  location.reload();
 }
 
 search.oninput=render;
