@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>SESSÃO 99 • Admin Filmes</title>
+<title>SESSÃO 99 • Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -22,162 +22,198 @@
 *{box-sizing:border-box}
 body{
   margin:0;
+  height:100vh;
+  overflow:hidden;
   background:linear-gradient(180deg,#05060c,#07090f);
   color:var(--text);
   font-family:Inter,Arial,sans-serif;
 }
+
 .wrapper{
-  max-width:1300px;
-  margin:28px auto;
-  padding:24px;
-}
-.grid{
+  height:100vh;
+  padding:16px 20px;
   display:grid;
-  grid-template-columns:380px 1fr;
-  gap:24px;
+  grid-template-columns:360px 1fr;
+  gap:16px;
 }
+
+/* PANEL */
 .panel{
   background:var(--panel);
-  border-radius:18px;
-  padding:24px;
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
 }
-label{display:block;margin-top:12px;font-weight:600}
+h3{margin:0 0 10px}
+
+/* FORM */
+label{font-size:12px;margin-top:8px;font-weight:600}
 input,textarea,select{
   width:100%;
-  margin-top:6px;
-  padding:10px;
-  border-radius:10px;
+  margin-top:4px;
+  padding:8px 10px;
+  border-radius:8px;
   border:none;
   background:var(--input);
   color:#fff;
+  font-size:13px;
 }
-textarea{resize:vertical}
+textarea{resize:none;height:60px}
 button{
-  width:100%;
-  margin-top:16px;
-  padding:14px;
+  margin-top:12px;
+  padding:12px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
   background:var(--accent);
   color:#fff;
+  font-size:14px;
   cursor:pointer;
 }
-.hidden{display:none}
-.status{margin-bottom:12px;font-weight:600}
-.ok{color:var(--ok)}
-.err{color:var(--err)}
 
-.list{
+/* LIST */
+.filters{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-  gap:16px;
+  grid-template-columns:2fr 1fr 1fr;
+  gap:8px;
+  margin-bottom:10px;
 }
-.item{
+.list{
+  flex:1;
+  overflow-y:auto;
+  padding-right:6px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:8px;
+}
+
+/* CARD */
+.card{
   background:var(--card);
-  border-radius:14px;
+  border-radius:10px;
   overflow:hidden;
+  font-size:11px;
 }
-.item img{
+.card img{
   width:100%;
-  height:240px;
+  height:110px;
   object-fit:cover;
 }
-.item .box{padding:12px}
-.item h4{margin:0 0 6px;font-size:14px}
+.card .box{padding:6px}
+.card h4{
+  margin:0;
+  font-size:11px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.card small{color:var(--muted)}
 .actions{
   display:flex;
-  gap:6px;
-  margin-top:8px;
+  gap:4px;
+  margin-top:4px;
 }
 .actions button{
-  flex:1;
-  padding:6px;
-  font-size:12px;
+  padding:4px;
+  font-size:10px;
 }
-.toggle{
-  background:#111827;
-}
-.danger{
-  background:#7f1d1d;
-}
-.filters{
-  display:flex;
-  gap:10px;
-  margin-bottom:14px;
-}
-.filters input,.filters select{
-  flex:1;
-}
+.danger{background:#7f1d1d}
+.toggle{background:#111827}
+
+/* STATUS */
+.status{font-size:13px;margin-bottom:8px}
+.ok{color:var(--ok)}
+.err{color:var(--err)}
+.hidden{display:none}
 </style>
 </head>
 
 <body>
+
 <div class="wrapper">
-
-<div id="status" class="status">Inicializando…</div>
-
-<div class="grid">
 
 <!-- FORM -->
 <div class="panel">
-  <h3 id="formTitle">Novo Registro</h3>
-
+  <h3>Novo / Editar</h3>
   <input type="hidden" id="editId">
 
-  <label>Título *</label>
+  <label>Título</label>
   <input id="titulo">
 
   <label>Descrição</label>
   <textarea id="descricao"></textarea>
 
   <label>Categoria</label>
-  <input id="categoria">
+  <input id="categoria" list="categorias">
 
-  <label>URL da Capa *</label>
+  <datalist id="categorias">
+    <option>Romance</option>
+    <option>Suspense</option>
+    <option>Terror</option>
+    <option>Ação</option>
+    <option>Aventura</option>
+    <option>Drama</option>
+    <option>Comédia</option>
+    <option>Ficção Científica</option>
+    <option>Fantasia</option>
+    <option>Documentário</option>
+    <option>Animação</option>
+    <option>Policial</option>
+    <option>Thriller</option>
+    <option>Mistério</option>
+    <option>Guerra</option>
+    <option>Musical</option>
+    <option>Biografia</option>
+  </datalist>
+
+  <label>URL da Capa</label>
   <input id="capa">
 
-  <label>ID do Vídeo *</label>
+  <label>ID do Vídeo</label>
   <input id="videoId">
 
-  <label>Tipo *</label>
+  <label>Tipo</label>
   <select id="tipo" onchange="toggleSerie()">
     <option value="filme">Filme</option>
     <option value="serie">Série</option>
   </select>
 
   <div id="serieBox" class="hidden">
-    <label>Nome da Série</label>
+    <label>Série</label>
     <input id="serie_nome">
-
-    <label>Temporada</label>
+    <label>Temp.</label>
     <input id="temporada" type="number">
-
-    <label>Episódio</label>
+    <label>Epis.</label>
     <input id="episodio" type="number">
   </div>
 
-  <label>Total de Visualizações</label>
+  <label>Views</label>
   <input id="views" disabled>
 
   <button onclick="salvar()">Salvar</button>
 </div>
 
-<!-- LISTA -->
+<!-- LIST -->
 <div class="panel">
+  <div class="status" id="status">Carregando…</div>
+
   <div class="filters">
     <input id="search" placeholder="Buscar título">
     <select id="fTipo">
-      <option value="">Todos</option>
+      <option value="">Tipo</option>
       <option value="filme">Filme</option>
       <option value="serie">Série</option>
     </select>
     <input id="fCategoria" placeholder="Categoria">
   </div>
 
-  <div id="lista" class="list"></div>
+  <div class="list">
+    <div id="lista" class="grid"></div>
+  </div>
 </div>
 
-</div>
 </div>
 
 <script>
@@ -187,9 +223,8 @@ const supabaseClient = window.supabase.createClient(
 );
 
 let filmes=[];
-
-const statusEl=document.getElementById("status");
 const lista=document.getElementById("lista");
+const statusEl=document.getElementById("status");
 
 function toggleSerie(){
   serieBox.classList.toggle("hidden", tipo.value!=="serie");
@@ -197,40 +232,54 @@ function toggleSerie(){
 
 async function carregar(){
   const {data,error}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
-  if(error){statusEl.textContent=error.message;statusEl.className="status err";return;}
+  if(error){statusEl.textContent=error.message;return;}
   filmes=data||[];
+  statusEl.textContent=`${filmes.length} registros`;
   render();
-  statusEl.textContent=`✅ ${filmes.length} registros`;
-  statusEl.className="status ok";
 }
 
 function render(){
   lista.innerHTML="";
   const s=search.value.toLowerCase();
-  const ft=fTipo.value;
-  const fc=fCategoria.value.toLowerCase();
+  const t=fTipo.value;
+  const c=fCategoria.value.toLowerCase();
 
   filmes.filter(f=>{
     return (!s||f.titulo.toLowerCase().includes(s))
-    &&(!ft||f.tipo===ft)
-    &&(!fc||f.categoria?.toLowerCase().includes(fc));
+      &&(!t||f.tipo===t)
+      &&(!c||f.categoria?.toLowerCase().includes(c));
   }).forEach(f=>{
     const d=document.createElement("div");
-    d.className="item";
+    d.className="card";
     d.innerHTML=`
       <img src="${f.capa_url}">
       <div class="box">
         <h4>${f.titulo}</h4>
-        <small>${f.tipo} • ${f.categoria||""}</small><br>
+        <small>${f.categoria||""}</small><br>
         <small>👁 ${f.total_visualizacoes||0}</small>
         <div class="actions">
           <button onclick='editar(${JSON.stringify(f)})'>✏️</button>
-          <button class="toggle" onclick='toggleAtivo("${f.id}",${f.ativo})'>${f.ativo?"Ativo":"Inativo"}</button>
+          <button class="toggle" onclick='toggleAtivo("${f.id}",${f.ativo})'>${f.ativo?"ON":"OFF"}</button>
           <button class="danger" onclick='excluir("${f.id}")'>🗑️</button>
         </div>
       </div>`;
     lista.appendChild(d);
   });
+}
+
+function editar(f){
+  editId.value=f.id;
+  titulo.value=f.titulo;
+  descricao.value=f.descricao||"";
+  categoria.value=f.categoria||"";
+  capa.value=f.capa_url;
+  videoId.value=f.video_url;
+  tipo.value=f.tipo;
+  views.value=f.total_visualizacoes||0;
+  toggleSerie();
+  serie_nome.value=f.serie_nome||"";
+  temporada.value=f.temporada||"";
+  episodio.value=f.episodio||"";
 }
 
 async function salvar(){
@@ -249,38 +298,19 @@ async function salvar(){
     payload.episodio=episodio.value||null;
   }
 
-  let res;
   if(editId.value){
-    res=await supabaseClient.from("filmes").update(payload).eq("id",editId.value);
+    await supabaseClient.from("filmes").update(payload).eq("id",editId.value);
   }else{
-    res=await supabaseClient.from("filmes").insert(payload);
+    await supabaseClient.from("filmes").insert(payload);
   }
-
-  if(res.error){alert(res.error.message);return;}
   location.reload();
 }
 
-function editar(f){
-  editId.value=f.id;
-  titulo.value=f.titulo;
-  descricao.value=f.descricao||"";
-  categoria.value=f.categoria||"";
-  capa.value=f.capa_url;
-  videoId.value=f.video_url;
-  tipo.value=f.tipo;
-  views.value=f.total_visualizacoes||0;
-  toggleSerie();
-  serie_nome.value=f.serie_nome||"";
-  temporada.value=f.temporada||"";
-  episodio.value=f.episodio||"";
-}
-
 async function excluir(id){
-  if(!confirm("Excluir este registro?"))return;
+  if(!confirm("Excluir registro?"))return;
   await supabaseClient.from("filmes").delete().eq("id",id);
   carregar();
 }
-
 async function toggleAtivo(id,ativo){
   await supabaseClient.from("filmes").update({ativo:!ativo}).eq("id",id);
   carregar();
