@@ -2,8 +2,23 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>CLENA TV • Painel</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLENA TV • Admin</title>
+
+<!-- VIEWPORT SEM ZOOM -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0f10">
+
+<!-- iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="CLENA TV">
+<link rel="apple-touch-icon" href="logo.png">
+
+<!-- FAVICON -->
+<link rel="icon" href="logo.png">
 
 <style>
 /* ====================================================== */
@@ -19,19 +34,19 @@
 :root{
   --bg:#0f0f10;
   --surface:#1b1b1e;
-  --surface-soft:rgba(27,27,30,.85);
+  --surface-soft:rgba(27,27,30,.88);
   --accent:#e50914;
   --border:#2b2b2b;
   --muted:#b5b5b5;
   --text:#ffffff;
 }
 
-body{
-  height:100vh;
-  display:flex;
-  overflow:hidden;
-  background:radial-gradient(70% 60% at 50% 25%, #1a1a1a 0%, #0f0f10 60%);
+html,body{
+  height:100%;
+  background:var(--bg);
   color:var(--text);
+  overflow:hidden;
+  overscroll-behavior:none;
 }
 
 /* ====================================================== */
@@ -48,11 +63,11 @@ body{
   transition:width .25s;
   position:relative;
 }
-.sidebar.closed{ width:72px; }
+.sidebar.closed{ width:70px; }
 
 .logo-area{
   text-align:center;
-  padding-bottom:22px;
+  padding-bottom:20px;
 }
 .logo-area img{
   width:120px;
@@ -77,9 +92,7 @@ body{
 }
 .sidebar.closed #toggleMenu{ left:56px; }
 
-/* ====================================================== */
 /* MENU */
-/* ====================================================== */
 .menu{ margin-top:6px; }
 
 .menu-item{
@@ -92,17 +105,20 @@ body{
   color:#e5e5e5;
   border-radius:10px;
   cursor:pointer;
-  transition:.2s;
 }
-.menu-item img{ width:20px; filter:invert(1); opacity:.9; }
+.menu-item img{
+  width:20px;
+  filter:invert(1);
+  opacity:.9;
+}
 
 .menu-item:hover{
   background:rgba(229,9,20,.15);
 }
 
 .menu-item.active{
-  background:rgba(229,9,20,.22);
-  font-weight:700;
+  background:rgba(229,9,20,.28);
+  font-weight:800;
   border-left:4px solid var(--accent);
 }
 
@@ -125,9 +141,9 @@ body{
   background:rgba(229,9,20,.18);
 }
 .submenu a.active-sub{
-  background:rgba(229,9,20,.28);
-  font-weight:600;
+  background:rgba(229,9,20,.32);
   color:#fff;
+  font-weight:700;
 }
 .sidebar.closed .submenu{ margin-left:18px; }
 .sidebar.closed .submenu .label{ display:none; }
@@ -139,7 +155,7 @@ body{
   flex:1;
   display:flex;
   flex-direction:column;
-  height:100vh;
+  height:100%;
 }
 
 /* HEADER */
@@ -169,7 +185,7 @@ body{
 }
 .logout{
   cursor:pointer;
-  font-weight:700;
+  font-weight:800;
   color:#ffb4b4;
 }
 .logout:hover{ color:#fff; }
@@ -192,15 +208,14 @@ iframe{
   <div id="toggleMenu" onclick="toggleMenu()">❮</div>
 
   <div class="logo-area">
-    <!-- SUA LOGO -->
     <img src="logo.png">
   </div>
 
   <div class="menu">
 
-    <div class="menu-item active" onclick="openPage('home.html')" data-page="home.html">
-      <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png">
-      <span class="label">Home</span>
+    <div class="menu-item active" onclick="openPage('dashboard.html')" data-page="dashboard.html">
+      <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png">
+      <span class="label">Dashboard</span>
     </div>
 
     <div class="menu-item" onclick="toggleSub('sub_conteudo')">
@@ -209,20 +224,13 @@ iframe{
     </div>
 
     <div class="submenu" id="sub_conteudo">
-      <a onclick="openPage('filmes.html')" data-page="filmes.html">
-        <span class="label">Filmes</span>
-      </a>
-      <a onclick="openPage('series.html')" data-page="series.html">
-        <span class="label">Séries</span>
-      </a>
-      <a onclick="openPage('categorias.html')" data-page="categorias.html">
-        <span class="label">Categorias</span>
-      </a>
+      <a onclick="openPage('filmes.html')" data-page="filmes.html"><span class="label">Filmes</span></a>
+      <a onclick="openPage('series.html')" data-page="series.html"><span class="label">Séries</span></a>
     </div>
 
-    <div class="menu-item" onclick="openPage('dashboard.html')" data-page="dashboard.html">
-      <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png">
-      <span class="label">Dashboard</span>
+    <div class="menu-item" onclick="openPage('usuarios.html')" data-page="usuarios.html">
+      <img src="https://cdn-icons-png.flaticon.com/512/3524/3524659.png">
+      <span class="label">Usuários</span>
     </div>
 
     <div class="menu-item" onclick="openPage('configuracoes.html')" data-page="configuracoes.html">
@@ -244,11 +252,18 @@ iframe{
     </div>
   </div>
 
-  <iframe id="frame" src="home.html"></iframe>
+  <!-- 🔥 SEU PAINEL ANTIGO RODA AQUI -->
+  <iframe id="frame" src="dashboard.html"></iframe>
 
 </div>
 
 <script>
+/* SERVICE WORKER */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+
+/* NAVEGAÇÃO */
 function openPage(page){
   document.getElementById("frame").src = page;
   highlightMenu(page);
@@ -278,8 +293,8 @@ function toggleMenu(){
 }
 
 function logout(){
-  // depois conecta com Supabase Auth
-  alert("Logout");
+  localStorage.clear();
+  location.href="login.html";
 }
 </script>
 
