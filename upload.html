@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>SESSÃO 99 • Admin</title>
+<title>SESSÃO 99 • Admin Filmes</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -27,20 +27,25 @@ body{
   font-family:Inter,Arial,sans-serif;
 }
 .wrapper{
-  max-width:1200px;
-  margin:32px auto;
+  max-width:1300px;
+  margin:28px auto;
   padding:24px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:380px 1fr;
+  gap:24px;
 }
 .panel{
   background:var(--panel);
   border-radius:18px;
   padding:24px;
 }
-label{display:block;margin-top:14px;font-weight:600}
+label{display:block;margin-top:12px;font-weight:600}
 input,textarea,select{
   width:100%;
   margin-top:6px;
-  padding:12px;
+  padding:10px;
   border-radius:10px;
   border:none;
   background:var(--input);
@@ -49,30 +54,75 @@ input,textarea,select{
 textarea{resize:vertical}
 button{
   width:100%;
-  margin-top:18px;
+  margin-top:16px;
   padding:14px;
   border:none;
   border-radius:12px;
   background:var(--accent);
   color:#fff;
-  font-size:15px;
   cursor:pointer;
 }
 .hidden{display:none}
-.status{margin-bottom:14px;font-weight:600}
+.status{margin-bottom:12px;font-weight:600}
 .ok{color:var(--ok)}
 .err{color:var(--err)}
+
+.list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:16px;
+}
+.item{
+  background:var(--card);
+  border-radius:14px;
+  overflow:hidden;
+}
+.item img{
+  width:100%;
+  height:240px;
+  object-fit:cover;
+}
+.item .box{padding:12px}
+.item h4{margin:0 0 6px;font-size:14px}
+.actions{
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+}
+.actions button{
+  flex:1;
+  padding:6px;
+  font-size:12px;
+}
+.toggle{
+  background:#111827;
+}
+.danger{
+  background:#7f1d1d;
+}
+.filters{
+  display:flex;
+  gap:10px;
+  margin-bottom:14px;
+}
+.filters input,.filters select{
+  flex:1;
+}
 </style>
 </head>
 
 <body>
-
 <div class="wrapper">
 
 <div id="status" class="status">Inicializando…</div>
 
+<div class="grid">
+
+<!-- FORM -->
 <div class="panel">
-  <h2>Novo Registro</h2>
+  <h3 id="formTitle">Novo Registro</h3>
+
+  <input type="hidden" id="editId">
 
   <label>Título *</label>
   <input id="titulo">
@@ -87,7 +137,7 @@ button{
   <input id="capa">
 
   <label>ID do Vídeo *</label>
-  <input id="videoId" placeholder="ex: Stranger.Things.S05E03">
+  <input id="videoId">
 
   <label>Tipo *</label>
   <select id="tipo" onchange="toggleSerie()">
@@ -106,9 +156,28 @@ button{
     <input id="episodio" type="number">
   </div>
 
+  <label>Total de Visualizações</label>
+  <input id="views" disabled>
+
   <button onclick="salvar()">Salvar</button>
 </div>
 
+<!-- LISTA -->
+<div class="panel">
+  <div class="filters">
+    <input id="search" placeholder="Buscar título">
+    <select id="fTipo">
+      <option value="">Todos</option>
+      <option value="filme">Filme</option>
+      <option value="serie">Série</option>
+    </select>
+    <input id="fCategoria" placeholder="Categoria">
+  </div>
+
+  <div id="lista" class="list"></div>
+</div>
+
+</div>
 </div>
 
 <script>
@@ -117,50 +186,111 @@ const supabaseClient = window.supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-const statusEl = document.getElementById("status");
+let filmes=[];
+
+const statusEl=document.getElementById("status");
+const lista=document.getElementById("lista");
 
 function toggleSerie(){
-  const tipo = document.getElementById("tipo").value;
-  document.getElementById("serieBox").classList.toggle("hidden", tipo !== "serie");
+  serieBox.classList.toggle("hidden", tipo.value!=="serie");
+}
+
+async function carregar(){
+  const {data,error}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
+  if(error){statusEl.textContent=error.message;statusEl.className="status err";return;}
+  filmes=data||[];
+  render();
+  statusEl.textContent=`✅ ${filmes.length} registros`;
+  statusEl.className="status ok";
+}
+
+function render(){
+  lista.innerHTML="";
+  const s=search.value.toLowerCase();
+  const ft=fTipo.value;
+  const fc=fCategoria.value.toLowerCase();
+
+  filmes.filter(f=>{
+    return (!s||f.titulo.toLowerCase().includes(s))
+    &&(!ft||f.tipo===ft)
+    &&(!fc||f.categoria?.toLowerCase().includes(fc));
+  }).forEach(f=>{
+    const d=document.createElement("div");
+    d.className="item";
+    d.innerHTML=`
+      <img src="${f.capa_url}">
+      <div class="box">
+        <h4>${f.titulo}</h4>
+        <small>${f.tipo} • ${f.categoria||""}</small><br>
+        <small>👁 ${f.total_visualizacoes||0}</small>
+        <div class="actions">
+          <button onclick='editar(${JSON.stringify(f)})'>✏️</button>
+          <button class="toggle" onclick='toggleAtivo("${f.id}",${f.ativo})'>${f.ativo?"Ativo":"Inativo"}</button>
+          <button class="danger" onclick='excluir("${f.id}")'>🗑️</button>
+        </div>
+      </div>`;
+    lista.appendChild(d);
+  });
 }
 
 async function salvar(){
-  const payload = {
-    titulo: titulo.value.trim(),
-    descricao: descricao.value.trim(),
-    categoria: categoria.value.trim(),
-    capa_url: capa.value.trim(),
-    video_url: videoId.value.trim(),
-    tipo: tipo.value,
-    ativo: true
+  const payload={
+    titulo:titulo.value,
+    descricao:descricao.value,
+    categoria:categoria.value,
+    capa_url:capa.value,
+    video_url:videoId.value,
+    tipo:tipo.value,
+    ativo:true
   };
-
-  if(!payload.titulo || !payload.capa_url || !payload.video_url){
-    statusEl.textContent = "❌ Preencha os campos obrigatórios";
-    statusEl.className = "status err";
-    return;
+  if(tipo.value==="serie"){
+    payload.serie_nome=serie_nome.value;
+    payload.temporada=temporada.value||null;
+    payload.episodio=episodio.value||null;
   }
 
-  if(payload.tipo === "serie"){
-    payload.serie_nome = serie_nome.value || null;
-    payload.temporada = temporada.value ? Number(temporada.value) : null;
-    payload.episodio = episodio.value ? Number(episodio.value) : null;
+  let res;
+  if(editId.value){
+    res=await supabaseClient.from("filmes").update(payload).eq("id",editId.value);
+  }else{
+    res=await supabaseClient.from("filmes").insert(payload);
   }
 
-  statusEl.textContent = "⏳ Salvando no Supabase…";
-  statusEl.className = "status";
-
-  const { error } = await supabaseClient.from("filmes").insert(payload);
-
-  if(error){
-    statusEl.textContent = "❌ Erro: " + error.message;
-    statusEl.className = "status err";
-    return;
-  }
-
-  statusEl.textContent = "✅ Registro salvo com sucesso";
-  statusEl.className = "status ok";
+  if(res.error){alert(res.error.message);return;}
+  location.reload();
 }
+
+function editar(f){
+  editId.value=f.id;
+  titulo.value=f.titulo;
+  descricao.value=f.descricao||"";
+  categoria.value=f.categoria||"";
+  capa.value=f.capa_url;
+  videoId.value=f.video_url;
+  tipo.value=f.tipo;
+  views.value=f.total_visualizacoes||0;
+  toggleSerie();
+  serie_nome.value=f.serie_nome||"";
+  temporada.value=f.temporada||"";
+  episodio.value=f.episodio||"";
+}
+
+async function excluir(id){
+  if(!confirm("Excluir este registro?"))return;
+  await supabaseClient.from("filmes").delete().eq("id",id);
+  carregar();
+}
+
+async function toggleAtivo(id,ativo){
+  await supabaseClient.from("filmes").update({ativo:!ativo}).eq("id",id);
+  carregar();
+}
+
+search.oninput=render;
+fTipo.onchange=render;
+fCategoria.oninput=render;
+
+carregar();
 </script>
 
 </body>
