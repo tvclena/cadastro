@@ -54,23 +54,18 @@ const supabaseClient = supabase.createClient(
 );
 
 
-/* ===== BUNNY UPLOAD (CORRIGIDO) ===== */
 const BUNNY_STORAGE_ZONE = "sessao99";
-const BUNNY_API_KEY = "d498d56e-361b-4a1e-9edb9eb63e3b-2e6a-4c17"; // NÃO CDN KEY
+const BUNNY_API_KEY = "d498d56e-361b-4a1e-9edb9eb63e3b-2e6a-4c17";
+const BUNNY_STORAGE_HOST = "https://br.storage.bunnycdn.com";
 const BUNNY_CDN_URL = "https://sessao99.b-cdn.net";
 
 async function uploadCapa(file) {
   if (!file) return "";
 
   const ext = file.name.split(".").pop().toLowerCase();
-  const safeName =
-    Date.now() +
-    "_" +
-    Math.random().toString(36).substring(2) +
-    "." +
-    ext;
+  const safeName = `${Date.now()}_${crypto.randomUUID()}.${ext}`;
 
-  const uploadUrl = `https://storage.bunnycdn.com/${BUNNY_STORAGE_ZONE}/capas/${safeName}`;
+  const uploadUrl = `${BUNNY_STORAGE_HOST}/${BUNNY_STORAGE_ZONE}/capas/${safeName}`;
 
   const res = await fetch(uploadUrl, {
     method: "PUT",
@@ -82,12 +77,14 @@ async function uploadCapa(file) {
   });
 
   if (!res.ok) {
-    console.error("Bunny error:", await res.text());
+    const err = await res.text();
+    console.error("Bunny error:", err);
     throw new Error("Erro ao enviar imagem para o Bunny");
   }
 
   return `${BUNNY_CDN_URL}/capas/${safeName}`;
 }
+
 
 
 
