@@ -78,18 +78,26 @@ const supabaseClient = supabase.createClient(
 /* ================= UPLOAD ================= */
 async function uploadBunny(file){
   const name = Date.now()+"_"+file.name.replace(/\s+/g,"_");
-const BUNNY_STORAGE_ENDPOINT = "https://br.storage.bunnycdn.com";
+
+  const BUNNY_STORAGE_ENDPOINT = "https://br.storage.bunnycdn.com";
+  const url = `${BUNNY_STORAGE_ENDPOINT}/${BUNNY_STORAGE_ZONE}/capas/${name}`;
+
   const res = await fetch(url,{
-    method:"PUT",
+    method: "PUT",
     headers:{
-      "AccessKey":BUNNY_API_KEY,
-      "Content-Type":file.type
+      "AccessKey": BUNNY_API_KEY,
+      "Content-Type": file.type
     },
-    body:file
+    body: file
   });
-  if(!res.ok) throw "Erro ao enviar imagem";
+
+  if(!res.ok){
+    throw new Error("Erro ao enviar imagem: " + res.status);
+  }
+
   return `${BUNNY_CDN_URL}/capas/${name}`;
 }
+
 </script>
 
 <div class="wrapper">
