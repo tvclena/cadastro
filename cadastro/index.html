@@ -29,8 +29,11 @@ body{
 }
 
 .wrapper{
-  height:100vh;padding:16px 20px;
-  display:grid;grid-template-columns:360px 1fr;gap:16px;
+  height:100vh;
+  padding:16px 20px;
+  display:grid;
+  grid-template-columns:360px 1fr;
+  gap:16px;
 }
 
 .panel{
@@ -59,8 +62,7 @@ input,textarea,select{
   font-size:13px;
 }
 
-input::placeholder,
-textarea::placeholder{color:var(--muted)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
 
 textarea{resize:none;min-height:80px}
 
@@ -108,7 +110,6 @@ button:hover{background:var(--accent-dark)}
 }
 
 /* ===== MODAL ===== */
-
 .modal{
   position:fixed;
   inset:0;
@@ -155,8 +156,8 @@ button:hover{background:var(--accent-dark)}
 
 .modal-header{
   padding:14px 18px;
-  border-bottom:1px solid #1f2937;
   font-weight:700;
+  border-bottom:1px solid #1f2937;
 }
 
 .modal-content{
@@ -174,12 +175,53 @@ button:hover{background:var(--accent-dark)}
 }
 
 .modal-footer button:last-child{background:#1f2937}
-
 .add-ep{background:#1f2937}
+
+/* ===== OVERLAY SALVANDO ===== */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+}
+
+.overlay-box{
+  background:#020617;
+  padding:28px 36px;
+  border-radius:16px;
+  font-weight:700;
+  font-size:15px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.spinner{
+  width:22px;height:22px;
+  border:3px solid #333;
+  border-top:3px solid var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
 </style>
 </head>
 
 <body>
+
+<!-- OVERLAY -->
+<div id="overlay" class="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    Salvando, aguarde…
+  </div>
+</div>
 
 <datalist id="categorias">
   <option>Romance</option><option>Suspense</option><option>Terror</option>
@@ -288,6 +330,9 @@ const supabaseClient=supabase.createClient(
 
 let registros=[],atual=null;
 
+function showOverlay(){overlay.style.display="flex";}
+function hideOverlay(){overlay.style.display="none";}
+
 async function carregar(){
   const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
   registros=data||[];
@@ -329,13 +374,13 @@ function addEpNovo(){
 }
 
 async function salvarNovo(){
+  showOverlay();
   if(tipo.value==="filme"){
-    if(!videoFilmeNovo.value.trim()) return alert("Informe o ID");
     await supabaseClient.from("filmes").insert({
       titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
       capa_url:capa.value,video_url:videoFilmeNovo.value,tipo:"filme",ativo:true
     });
-    carregar();return;
+    hideOverlay();carregar();return;
   }
   await supabaseClient.from("filmes").insert(
     [...epsNovo.children].map(e=>({
@@ -344,7 +389,7 @@ async function salvarNovo(){
       tipo:"serie",serie_nome:titulo.value,episodio:e.children[0].value,ativo:true
     }))
   );
-  carregar();
+  hideOverlay();carregar();
 }
 
 function abrirModal(r){
@@ -383,6 +428,7 @@ function addEpEdit(ep="",vid=""){
 function fecharModal(){modal.style.display="none";}
 
 async function salvarEdicao(){
+  showOverlay();
   if(atual.tipo==="filme"){
     await supabaseClient.from("filmes").update({
       titulo:mTitulo.value,
@@ -401,7 +447,9 @@ async function salvarEdicao(){
       }))
     );
   }
-  fecharModal();carregar();
+  hideOverlay();
+  fecharModal();
+  carregar();
 }
 
 carregar();
