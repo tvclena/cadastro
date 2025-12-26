@@ -25,15 +25,16 @@ button{margin-top:12px;padding:12px;border:none;border-radius:12px;background:va
 .card{background:var(--card);border-radius:12px;overflow:hidden;cursor:pointer}
 .card img{width:100%;height:180px;object-fit:cover}
 .card .box{padding:8px;font-size:13px}
+
 .episodio{
   background:#0b1020;border-radius:12px;padding:10px;margin-top:10px;
-  display:grid;grid-template-columns:1fr 1.4fr auto;gap:6px;align-items:center
+  display:grid;grid-template-columns:80px 1fr auto;gap:6px;align-items:center
 }
 .episodio button{background:var(--danger);padding:8px}
 
 /* MODAL */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:999}
-.modal-box{width:650px;max-height:90vh;background:var(--panel);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.modal-box{width:680px;max-height:90vh;background:var(--panel);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
 .modal-cover img{width:100%;height:220px;object-fit:cover}
 .modal-body{padding:16px;overflow:auto}
 .modal-actions{display:flex;gap:10px;margin-top:14px}
@@ -68,7 +69,6 @@ async function uploadCapa(file){
     headers:{AccessKey:BUNNY_API_KEY,"Content-Type":file.type},
     body:file
   });
-
   if(!res.ok) throw new Error("Erro ao enviar capa");
   return `${BUNNY_CDN_URL}/capas/${name}`;
 }
@@ -99,6 +99,9 @@ let registros=[], atual=null;
   </div>
 
   <div id="boxSerie" style="display:none">
+    <label>Temporada</label>
+    <input type="number" id="temporadaNova" value="1" min="1">
+
     <h4>Episódios</h4>
     <div id="epsNovo"></div>
     <button onclick="addEpisodio()">➕ Episódio</button>
@@ -132,6 +135,9 @@ let registros=[], atual=null;
       </div>
 
       <div id="mSerie">
+        <label>Temporada</label>
+        <input type="number" id="mTemporada" min="1">
+
         <h4>Episódios</h4>
         <div id="epsEdit"></div>
         <button onclick="addEpisodio(true)">➕ Episódio</button>
@@ -159,7 +165,7 @@ function render(){
     const d=document.createElement("div");
     d.className="card";
     d.ondblclick=()=>abrirModal(r);
-    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box"><b>${r.titulo}</b><br>${r.tipo}</div>`;
+    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box"><b>${r.titulo}</b><br>T${r.temporada||''}</div>`;
     lista.appendChild(d);
   });
 }
@@ -188,15 +194,21 @@ async function salvarNovo(){
 
   if(tipo.value==="filme"){
     await supabaseClient.from("filmes").insert({
-      titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
-      capa_url:capa,video_url:videoFilme.value,tipo:"filme",ativo:true
+      titulo,descricao,categoria,
+      capa_url:capa,video_url:videoFilme.value,
+      tipo:"filme",ativo:true
     });
     return carregar();
   }
 
   const rows=[...epsNovo.children].map(e=>({
-    titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
-    capa_url:capa,tipo:"serie",serie_nome:titulo.value,temporada:1,
+    titulo:titulo.value,
+    descricao:descricao.value,
+    categoria:categoria.value,
+    capa_url:capa,
+    tipo:"serie",
+    serie_nome:titulo.value,
+    temporada:temporadaNova.value,
     episodio:e.querySelector(".ep").value,
     video_url:e.querySelector(".vid").value,
     ativo:true
@@ -213,13 +225,15 @@ function abrirModal(r){
   mDescricao.value=r.descricao||"";
   mCategoria.value=r.categoria||"";
   epsEdit.innerHTML="";
+  mTemporada.value=r.temporada||1;
 
   if(r.tipo==="filme"){
     mFilme.style.display="block";mSerie.style.display="none";
     mVideo.value=r.video_url||"";
   }else{
     mFilme.style.display="none";mSerie.style.display="block";
-    registros.filter(e=>e.serie_nome===r.serie_nome)
+    registros
+      .filter(e=>e.serie_nome===r.serie_nome && e.temporada===r.temporada)
       .sort((a,b)=>a.episodio-b.episodio)
       .forEach(e=>addEpisodio(true,e.episodio,e.video_url));
   }
@@ -240,11 +254,19 @@ async function salvarEdicao(){
     fecharModal();return carregar();
   }
 
-  await supabaseClient.from("filmes").delete().eq("serie_nome",atual.serie_nome);
+  await supabaseClient.from("filmes")
+    .delete()
+    .eq("serie_nome",atual.serie_nome)
+    .eq("temporada",atual.temporada);
 
   const rows=[...epsEdit.children].map(e=>({
-    titulo:mTitulo.value,descricao:mDescricao.value,categoria:mCategoria.value,
-    capa_url:capa,tipo:"serie",serie_nome:mTitulo.value,temporada:1,
+    titulo:mTitulo.value,
+    descricao:mDescricao.value,
+    categoria:mCategoria.value,
+    capa_url:capa,
+    tipo:"serie",
+    serie_nome:mTitulo.value,
+    temporada:mTemporada.value,
     episodio:e.querySelector(".ep").value,
     video_url:e.querySelector(".vid").value,
     ativo:true
