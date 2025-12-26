@@ -4,132 +4,55 @@
 <meta charset="UTF-8">
 <title>CLENA TV • Painel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
 :root{
-  --panel:#0f1424;
-  --card:#151a30;
-  --input:#0b1020;
-  --accent:#dc2626;
-  --danger:#7f1d1d;
-  --text:#e5e7eb;
-  --muted:#9ca3af;
+  --panel:#0f1424;--card:#151a30;--input:#0b1020;
+  --accent:#dc2626;--danger:#7f1d1d;--text:#e5e7eb;
 }
 *{box-sizing:border-box}
-body{
-  margin:0;
-  height:100vh;
-  background:#05060c;
-  color:var(--text);
-  font-family:Inter,Arial
-}
-.wrapper{
-  height:100vh;
-  padding:16px;
-  display:grid;
-  grid-template-columns:360px 1fr;
-  gap:16px
-}
-.panel{
-  background:var(--panel);
-  border-radius:16px;
-  padding:16px;
-  display:flex;
-  flex-direction:column
-}
+body{margin:0;background:#05060c;color:var(--text);font-family:Inter,Arial}
+.wrapper{height:100vh;padding:16px;display:grid;grid-template-columns:360px 1fr;gap:16px}
+.panel{background:var(--panel);border-radius:16px;padding:16px;display:flex;flex-direction:column}
 input,textarea,select{
-  width:100%;
-  margin-top:6px;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  background:var(--input);
-  color:#fff
+  width:100%;margin-top:6px;padding:10px;border-radius:10px;
+  border:none;background:var(--input);color:#fff
 }
-button{
-  margin-top:12px;
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  background:var(--accent);
-  color:#fff;
-  cursor:pointer
-}
-.grid{
-  flex:1;
-  overflow:auto;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:12px
-}
-.card{
-  background:var(--card);
-  border-radius:12px;
-  overflow:hidden;
-  cursor:pointer
-}
-.card img{
-  width:100%;
-  height:180px;
-  object-fit:cover
-}
-.card .box{
-  padding:8px;
-  font-size:13px
-}
+button{margin-top:12px;padding:12px;border:none;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer}
+.grid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.card{background:var(--card);border-radius:12px;overflow:hidden;cursor:pointer}
+.card img{width:100%;height:180px;object-fit:cover}
+.card .box{padding:8px;font-size:13px}
 .episodio{
   background:#0b1020;
   border-radius:12px;
   padding:10px;
-  margin-top:10px
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:1fr 1.2fr auto;
+  gap:6px;
+  align-items:center
+}
+.episodio button{
+  background:var(--danger);
+  padding:8px 10px
 }
 
 /* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.85);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:999
-}
-.modal-box{
-  width:620px;
-  max-height:90vh;
-  background:var(--panel);
-  border-radius:18px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column
-}
-.modal-cover img{
-  width:100%;
-  height:220px;
-  object-fit:cover
-}
-.modal-body{
-  padding:16px;
-  overflow:auto
-}
-.modal-actions{
-  display:flex;
-  gap:10px;
-  margin-top:14px
-}
-.modal-actions button:last-child{
-  background:#1f2937
-}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:999}
+.modal-box{width:650px;max-height:90vh;background:var(--panel);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.modal-cover img{width:100%;height:220px;object-fit:cover}
+.modal-body{padding:16px;overflow:auto}
+.modal-actions{display:flex;gap:10px;margin-top:14px}
+.modal-actions .danger{background:var(--danger)}
+.modal-actions .secondary{background:#1f2937}
 </style>
 </head>
 
 <body>
 
 <script>
-/* ===== SUPABASE ===== */
 const supabaseClient = supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
@@ -144,7 +67,6 @@ let atual = null;
 <!-- CADASTRO -->
 <div class="panel">
   <h3>Novo Conteúdo</h3>
-
   <input id="titulo" placeholder="Título">
   <textarea id="descricao" placeholder="Descrição"></textarea>
   <input id="categoria" placeholder="Categoria">
@@ -154,12 +76,10 @@ let atual = null;
     <option value="serie">Série</option>
   </select>
 
-  <!-- FILME -->
   <div id="boxFilme">
     <input id="videoFilme" placeholder="ID do vídeo">
   </div>
 
-  <!-- SÉRIE -->
   <div id="boxSerie" style="display:none">
     <h4>Episódios</h4>
     <div id="epsNovo"></div>
@@ -179,11 +99,9 @@ let atual = null;
 <!-- MODAL -->
 <div id="modal" class="modal">
   <div class="modal-box">
-    <div class="modal-cover">
-      <img id="mCapa">
-    </div>
-    <div class="modal-body">
+    <div class="modal-cover"><img id="mCapa"></div>
 
+    <div class="modal-body">
       <input id="mTitulo">
       <textarea id="mDescricao"></textarea>
       <input id="mCategoria">
@@ -200,21 +118,17 @@ let atual = null;
 
       <div class="modal-actions">
         <button onclick="salvarEdicao()">Salvar</button>
-        <button onclick="fecharModal()">Cancelar</button>
+        <button class="danger" onclick="excluirAtual()">Excluir</button>
+        <button class="secondary" onclick="fecharModal()">Cancelar</button>
       </div>
-
     </div>
   </div>
 </div>
 
 <script>
 async function carregar(){
-  const { data } = await supabaseClient
-    .from("filmes")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  registros = data || [];
+  const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
+  registros=data||[];
   render();
 }
 
@@ -224,32 +138,25 @@ function render(){
     const d=document.createElement("div");
     d.className="card";
     d.ondblclick=()=>abrirModal(r);
-    d.innerHTML=`
-      <img src="${r.capa_url}">
-      <div class="box">
-        <b>${r.titulo}</b><br>
-        <span style="color:#9ca3af">${r.tipo}</span>
-      </div>
-    `;
+    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box"><b>${r.titulo}</b><br>${r.tipo}</div>`;
     lista.appendChild(d);
   });
 }
 
 function toggleTipo(){
-  boxFilme.style.display = tipo.value==="filme" ? "block" : "none";
-  boxSerie.style.display = tipo.value==="serie" ? "block" : "none";
-  if(tipo.value==="serie" && !epsNovo.children.length){
-    addEpisodio();
-  }
+  boxFilme.style.display=tipo.value==="filme"?"block":"none";
+  boxSerie.style.display=tipo.value==="serie"?"block":"none";
+  if(tipo.value==="serie"&&!epsNovo.children.length) addEpisodio();
 }
 
-function addEpisodio(edit=false, ep=1, video=""){
-  const wrap = edit ? epsEdit : epsNovo;
-  const d = document.createElement("div");
+function addEpisodio(edit=false,ep=1,video=""){
+  const wrap=edit?epsEdit:epsNovo;
+  const d=document.createElement("div");
   d.className="episodio";
   d.innerHTML=`
-    <input type="number" class="ep" value="${ep}" placeholder="Episódio">
+    <input type="number" class="ep" value="${ep}">
     <input class="vid" placeholder="ID do vídeo" value="${video}">
+    <button onclick="this.parentNode.remove()">🗑</button>
   `;
   wrap.appendChild(d);
 }
@@ -257,100 +164,75 @@ function addEpisodio(edit=false, ep=1, video=""){
 async function salvarNovo(){
   if(tipo.value==="filme"){
     await supabaseClient.from("filmes").insert({
-      titulo: titulo.value,
-      descricao: descricao.value,
-      categoria: categoria.value,
-      video_url: videoFilme.value,
-      tipo: "filme",
-      ativo: true
+      titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
+      video_url:videoFilme.value,tipo:"filme",ativo:true
     });
     return carregar();
   }
 
-  const rows = [...epsNovo.children].map(e=>({
-    titulo: titulo.value,
-    descricao: descricao.value,
-    categoria: categoria.value,
-    tipo: "serie",
-    serie_nome: titulo.value,
-    temporada: 1,
-    episodio: e.querySelector(".ep").value,
-    video_url: e.querySelector(".vid").value,
-    ativo: true
+  const rows=[...epsNovo.children].map(e=>({
+    titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
+    tipo:"serie",serie_nome:titulo.value,temporada:1,
+    episodio:e.querySelector(".ep").value,
+    video_url:e.querySelector(".vid").value,
+    ativo:true
   }));
-
   await supabaseClient.from("filmes").insert(rows);
   carregar();
 }
 
 function abrirModal(r){
-  atual = r;
+  atual=r;
   modal.style.display="flex";
-
-  mCapa.src = r.capa_url || "";
-  mTitulo.value = r.titulo;
-  mDescricao.value = r.descricao || "";
-  mCategoria.value = r.categoria || "";
-
+  mTitulo.value=r.titulo;
+  mDescricao.value=r.descricao||"";
+  mCategoria.value=r.categoria||"";
   epsEdit.innerHTML="";
 
   if(r.tipo==="filme"){
-    mFilme.style.display="block";
-    mSerie.style.display="none";
-    mVideo.value = r.video_url || "";
+    mFilme.style.display="block";mSerie.style.display="none";
+    mVideo.value=r.video_url||"";
   }else{
-    mFilme.style.display="none";
-    mSerie.style.display="block";
-
-    registros
-      .filter(e=>e.serie_nome===r.serie_nome)
+    mFilme.style.display="none";mSerie.style.display="block";
+    registros.filter(e=>e.serie_nome===r.serie_nome)
       .sort((a,b)=>a.episodio-b.episodio)
-      .forEach(e=>{
-        addEpisodio(true, e.episodio, e.video_url);
-      });
+      .forEach(e=>addEpisodio(true,e.episodio,e.video_url));
   }
 }
 
-function fecharModal(){
-  modal.style.display="none";
-}
+function fecharModal(){modal.style.display="none";}
 
 async function salvarEdicao(){
   if(atual.tipo==="filme"){
-    await supabaseClient
-      .from("filmes")
-      .update({
-        titulo:mTitulo.value,
-        descricao:mDescricao.value,
-        categoria:mCategoria.value,
-        video_url:mVideo.value
-      })
-      .eq("id", atual.id);
-
-    fecharModal();
-    return carregar();
+    await supabaseClient.from("filmes").update({
+      titulo:mTitulo.value,descricao:mDescricao.value,
+      categoria:mCategoria.value,video_url:mVideo.value
+    }).eq("id",atual.id);
+    fecharModal();return carregar();
   }
 
-  await supabaseClient
-    .from("filmes")
-    .delete()
-    .eq("serie_nome", atual.serie_nome);
+  await supabaseClient.from("filmes").delete().eq("serie_nome",atual.serie_nome);
 
-  const rows = [...epsEdit.children].map(e=>({
-    titulo:mTitulo.value,
-    descricao:mDescricao.value,
-    categoria:mCategoria.value,
-    tipo:"serie",
-    serie_nome:mTitulo.value,
-    temporada:1,
+  const rows=[...epsEdit.children].map(e=>({
+    titulo:mTitulo.value,descricao:mDescricao.value,categoria:mCategoria.value,
+    tipo:"serie",serie_nome:mTitulo.value,temporada:1,
     episodio:e.querySelector(".ep").value,
     video_url:e.querySelector(".vid").value,
     ativo:true
   }));
-
   await supabaseClient.from("filmes").insert(rows);
-  fecharModal();
-  carregar();
+  fecharModal();carregar();
+}
+
+async function excluirAtual(){
+  if(!confirm("Tem certeza que deseja excluir?")) return;
+
+  if(atual.tipo==="filme"){
+    await supabaseClient.from("filmes").delete().eq("id",atual.id);
+  }else{
+    await supabaseClient.from("filmes").delete().eq("serie_nome",atual.serie_nome);
+  }
+  fecharModal();carregar();
 }
 
 carregar();
