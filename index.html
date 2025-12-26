@@ -174,23 +174,13 @@ body{
 }
 .logout:hover{ color:#fff; }
 
+/* IFRAME */
 iframe{
   border:none;
   width:100%;
   height:calc(100vh - 52px);
   background:transparent;
-  position:relative;
-  z-index:1;
 }
-body.search-open iframe{
-  pointer-events:none;
-}
-.search-results,
-.autocomplete-list{
-  position:absolute;
-  z-index:9999;
-}
-
 </style>
 </head>
 
@@ -291,11 +281,6 @@ function logout(){
   // depois conecta com Supabase Auth
   alert("Logout");
 }
-
-
-
-
-
 </script>
 
 </body>
