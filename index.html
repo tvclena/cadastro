@@ -174,13 +174,23 @@ body{
 }
 .logout:hover{ color:#fff; }
 
-/* IFRAME */
 iframe{
   border:none;
   width:100%;
   height:calc(100vh - 52px);
   background:transparent;
+  position:relative;
+  z-index:1;
 }
+body.search-open iframe{
+  pointer-events:none;
+}
+.search-results,
+.autocomplete-list{
+  position:absolute;
+  z-index:9999;
+}
+
 </style>
 </head>
 
@@ -282,6 +292,20 @@ function logout(){
   alert("Logout");
 }
 </script>
+<script>
+const input = document.querySelector('input');
 
+input.addEventListener('focus', () => {
+  window.parent.document.body.classList.add('search-open');
+});
+
+input.addEventListener('blur', () => {
+  setTimeout(() => {
+    window.parent.document.body.classList.remove('search-open');
+  }, 200);
+});
+</script>
+
+  
 </body>
 </html>
