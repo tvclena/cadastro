@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>CLENA TV</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
@@ -27,6 +28,7 @@ body{
   color:var(--text);
   font-family:Inter,Arial,sans-serif;
 }
+
 .wrapper{
   height:100vh;
   padding:16px 20px;
@@ -34,6 +36,8 @@ body{
   grid-template-columns:360px 1fr;
   gap:16px;
 }
+
+/* PANEL */
 .panel{
   background:var(--panel);
   border-radius:16px;
@@ -41,15 +45,21 @@ body{
   display:flex;
   flex-direction:column;
 }
+h3{margin:0 0 10px}
+
+/* FORM */
+label{font-size:12px;margin-top:8px;font-weight:600}
 input,textarea,select{
   width:100%;
-  margin-top:6px;
+  margin-top:4px;
   padding:8px 10px;
   border-radius:8px;
   border:none;
   background:var(--input);
   color:#fff;
+  font-size:13px;
 }
+textarea{resize:none;height:60px}
 button{
   margin-top:12px;
   padding:12px;
@@ -57,18 +67,23 @@ button{
   border-radius:10px;
   background:var(--accent);
   color:#fff;
+  font-size:14px;
   cursor:pointer;
 }
 button:hover{background:var(--accent-dark)}
-.hidden{display:none}
 
-/* LISTA */
-.list{flex:1;overflow-y:auto}
+/* LIST */
+.list{
+  flex:1;
+  overflow-y:auto;
+}
 .grid{
   display:grid;
   grid-template-columns:repeat(10,1fr);
   gap:8px;
 }
+
+/* CARD */
 .card{
   background:var(--card);
   border-radius:10px;
@@ -90,7 +105,6 @@ button:hover{background:var(--accent-dark)}
   inset:0;
   background:rgba(0,0,0,.85);
   backdrop-filter:blur(10px);
-  display:flex;
   align-items:center;
   justify-content:center;
   z-index:999;
@@ -109,7 +123,9 @@ button:hover{background:var(--accent-dark)}
   height:100%;
   object-fit:cover;
 }
-.modal-body{padding:16px}
+.modal-body{
+  padding:16px;
+}
 .episodio-row{
   display:grid;
   grid-template-columns:60px 1fr auto;
@@ -120,13 +136,17 @@ button:hover{background:var(--accent-dark)}
   background:var(--danger);
   padding:6px 10px;
 }
-.add-ep{background:#1f2937}
+.add-ep{
+  background:#1f2937;
+}
 .modal-actions{
   display:flex;
   gap:10px;
   margin-top:14px;
 }
-.modal-actions button:last-child{background:#1f2937}
+.modal-actions button:last-child{
+  background:#1f2937;
+}
 </style>
 </head>
 
@@ -137,15 +157,28 @@ button:hover{background:var(--accent-dark)}
 <!-- FORM NOVO -->
 <div class="panel">
   <h3>Novo</h3>
-  <input id="titulo" placeholder="Título">
-  <textarea id="descricao" placeholder="Descrição"></textarea>
-  <input id="categoria" placeholder="Categoria">
-  <input id="capa" placeholder="URL da capa">
-  <input id="videoId" placeholder="ID do vídeo">
+
+  <label>Título</label>
+  <input id="titulo">
+
+  <label>Descrição</label>
+  <textarea id="descricao"></textarea>
+
+  <label>Categoria</label>
+  <input id="categoria">
+
+  <label>URL da Capa</label>
+  <input id="capa">
+
+  <label>ID do Vídeo (filme)</label>
+  <input id="videoId">
+
+  <label>Tipo</label>
   <select id="tipo">
     <option value="filme">Filme</option>
     <option value="serie">Série</option>
   </select>
+
   <button onclick="salvarNovo()">Salvar</button>
 </div>
 
@@ -160,17 +193,23 @@ button:hover{background:var(--accent-dark)}
 </div>
 
 <!-- MODAL (COMEÇA FECHADO DE VERDADE) -->
-<div id="modal" class="modal hidden">
+<div id="modal" class="modal" style="display:none">
   <div class="modal-box">
     <div class="modal-cover">
       <img id="mCapa">
     </div>
     <div class="modal-body">
+
+      <label>Título</label>
       <input id="mTitulo">
+
+      <label>Descrição</label>
       <textarea id="mDescricao"></textarea>
+
+      <label>Categoria</label>
       <input id="mCategoria">
 
-      <div id="boxEpisodios" class="hidden">
+      <div id="boxEpisodios" style="display:none">
         <h4>Episódios</h4>
         <div id="listaEps"></div>
         <button class="add-ep" onclick="addEp()">➕ Adicionar episódio</button>
@@ -180,6 +219,7 @@ button:hover{background:var(--accent-dark)}
         <button onclick="salvarEdicao()">Salvar</button>
         <button onclick="fecharModal()">Cancelar</button>
       </div>
+
     </div>
   </div>
 </div>
@@ -194,11 +234,6 @@ let registros=[];
 let registroAtual=null;
 
 const modal=document.getElementById("modal");
-
-/* GARANTE QUE O MODAL NUNCA ABRE NO LOAD */
-window.addEventListener("DOMContentLoaded",()=>{
-  modal.classList.add("hidden");
-});
 
 async function carregar(){
   const {data}=await supabaseClient
@@ -229,7 +264,7 @@ function render(){
 
 function abrirModal(r){
   registroAtual=r;
-  modal.classList.remove("hidden");
+  modal.style.display="flex";
 
   mCapa.src=r.capa_url;
   mTitulo.value=r.titulo;
@@ -238,18 +273,18 @@ function abrirModal(r){
 
   listaEps.innerHTML="";
   if(r.tipo==="serie"){
-    boxEpisodios.classList.remove("hidden");
+    boxEpisodios.style.display="block";
     registros
       .filter(e=>e.tipo==="serie" && e.serie_nome===r.serie_nome)
       .sort((a,b)=>a.episodio-b.episodio)
       .forEach(e=>addEp(e.episodio,e.video_url));
   }else{
-    boxEpisodios.classList.add("hidden");
+    boxEpisodios.style.display="none";
   }
 }
 
 function fecharModal(){
-  modal.classList.add("hidden");
+  modal.style.display="none";
   registroAtual=null;
 }
 
