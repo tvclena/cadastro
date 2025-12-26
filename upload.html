@@ -41,18 +41,15 @@ body{
   display:flex;
   flex-direction:column;
 }
-h3{margin:0 0 10px}
-label{font-size:12px;margin-top:8px;font-weight:600}
 input,textarea,select{
   width:100%;
-  margin-top:4px;
+  margin-top:6px;
   padding:8px 10px;
   border-radius:8px;
   border:none;
   background:var(--input);
   color:#fff;
 }
-textarea{resize:none;height:60px}
 button{
   margin-top:12px;
   padding:12px;
@@ -123,17 +120,13 @@ button:hover{background:var(--accent-dark)}
   background:var(--danger);
   padding:6px 10px;
 }
-.add-ep{
-  background:#1f2937;
-}
+.add-ep{background:#1f2937}
 .modal-actions{
   display:flex;
   gap:10px;
   margin-top:14px;
 }
-.modal-actions button:last-child{
-  background:#1f2937;
-}
+.modal-actions button:last-child{background:#1f2937}
 </style>
 </head>
 
@@ -148,7 +141,7 @@ button:hover{background:var(--accent-dark)}
   <textarea id="descricao" placeholder="Descrição"></textarea>
   <input id="categoria" placeholder="Categoria">
   <input id="capa" placeholder="URL da capa">
-  <input id="videoId" placeholder="ID do vídeo (filme)">
+  <input id="videoId" placeholder="ID do vídeo">
   <select id="tipo">
     <option value="filme">Filme</option>
     <option value="serie">Série</option>
@@ -166,7 +159,7 @@ button:hover{background:var(--accent-dark)}
 
 </div>
 
-<!-- MODAL EDIÇÃO -->
+<!-- MODAL (COMEÇA FECHADO DE VERDADE) -->
 <div id="modal" class="modal hidden">
   <div class="modal-box">
     <div class="modal-cover">
@@ -197,10 +190,22 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-let registros=[], atual=null;
+let registros=[];
+let registroAtual=null;
+
+const modal=document.getElementById("modal");
+
+/* GARANTE QUE O MODAL NUNCA ABRE NO LOAD */
+window.addEventListener("DOMContentLoaded",()=>{
+  modal.classList.add("hidden");
+});
 
 async function carregar(){
-  const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
+  const {data}=await supabaseClient
+    .from("filmes")
+    .select("*")
+    .order("created_at",{ascending:false});
+
   registros=data||[];
   status.textContent=`${registros.length} registros`;
   render();
@@ -223,14 +228,15 @@ function render(){
 }
 
 function abrirModal(r){
-  atual=r;
+  registroAtual=r;
   modal.classList.remove("hidden");
+
   mCapa.src=r.capa_url;
   mTitulo.value=r.titulo;
   mDescricao.value=r.descricao||"";
   mCategoria.value=r.categoria||"";
-  listaEps.innerHTML="";
 
+  listaEps.innerHTML="";
   if(r.tipo==="serie"){
     boxEpisodios.classList.remove("hidden");
     registros
@@ -240,6 +246,11 @@ function abrirModal(r){
   }else{
     boxEpisodios.classList.add("hidden");
   }
+}
+
+function fecharModal(){
+  modal.classList.add("hidden");
+  registroAtual=null;
 }
 
 function addEp(ep="",vid=""){
@@ -255,14 +266,18 @@ function addEp(ep="",vid=""){
 }
 
 async function salvarEdicao(){
-  await supabaseClient.from("filmes")
-    .delete().eq("serie_nome",atual.serie_nome||atual.titulo);
+  if(!registroAtual) return;
+
+  await supabaseClient
+    .from("filmes")
+    .delete()
+    .eq("serie_nome",registroAtual.serie_nome||registroAtual.titulo);
 
   const inserts=[...listaEps.children].map(r=>({
     titulo:mTitulo.value,
     descricao:mDescricao.value,
     categoria:mCategoria.value,
-    capa_url:atual.capa_url,
+    capa_url:registroAtual.capa_url,
     video_url:r.children[1].value,
     tipo:"serie",
     serie_nome:mTitulo.value,
@@ -274,8 +289,6 @@ async function salvarEdicao(){
   fecharModal();
   carregar();
 }
-
-function fecharModal(){modal.classList.add("hidden")}
 
 async function salvarNovo(){
   await supabaseClient.from("filmes").insert({
