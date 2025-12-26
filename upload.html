@@ -45,7 +45,6 @@ body{
   display:flex;
   flex-direction:column;
 }
-h3{margin:0 0 10px}
 
 /* FORM */
 label{font-size:12px;margin-top:8px;font-weight:600}
@@ -59,7 +58,7 @@ input,textarea,select{
   color:#fff;
   font-size:13px;
 }
-textarea{resize:none;height:60px}
+textarea{resize:none;min-height:80px}
 button{
   margin-top:12px;
   padding:12px;
@@ -105,18 +104,23 @@ button:hover{background:var(--accent-dark)}
   inset:0;
   background:rgba(0,0,0,.85);
   backdrop-filter:blur(10px);
+  display:flex;
   align-items:center;
   justify-content:center;
   z-index:999;
 }
 .modal-box{
-  width:540px;
+  width:560px;
+  max-height:90vh;          /* 🔥 CHAVE */
   background:var(--panel);
   border-radius:18px;
   overflow:hidden;
+  display:flex;
+  flex-direction:column;
 }
 .modal-cover{
   height:220px;
+  flex-shrink:0;
 }
 .modal-cover img{
   width:100%;
@@ -125,6 +129,7 @@ button:hover{background:var(--accent-dark)}
 }
 .modal-body{
   padding:16px;
+  overflow-y:auto;          /* 🔥 CHAVE */
 }
 .episodio-row{
   display:grid;
@@ -136,9 +141,7 @@ button:hover{background:var(--accent-dark)}
   background:var(--danger);
   padding:6px 10px;
 }
-.add-ep{
-  background:#1f2937;
-}
+.add-ep{background:#1f2937}
 .modal-actions{
   display:flex;
   gap:10px;
@@ -192,14 +195,14 @@ button:hover{background:var(--accent-dark)}
 
 </div>
 
-<!-- MODAL (COMEÇA FECHADO DE VERDADE) -->
+<!-- MODAL -->
 <div id="modal" class="modal" style="display:none">
   <div class="modal-box">
     <div class="modal-cover">
       <img id="mCapa">
     </div>
-    <div class="modal-body">
 
+    <div class="modal-body">
       <label>Título</label>
       <input id="mTitulo">
 
@@ -219,7 +222,6 @@ button:hover{background:var(--accent-dark)}
         <button onclick="salvarEdicao()">Salvar</button>
         <button onclick="fecharModal()">Cancelar</button>
       </div>
-
     </div>
   </div>
 </div>
@@ -232,7 +234,6 @@ const supabaseClient = supabase.createClient(
 
 let registros=[];
 let registroAtual=null;
-
 const modal=document.getElementById("modal");
 
 async function carregar(){
