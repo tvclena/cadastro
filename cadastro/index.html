@@ -52,7 +52,7 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-/* ===== BUNNY CDN (CAPAS) ===== */
+/* ===== BUNNY CDN ===== */
 const BUNNY_STORAGE_ZONE = "sessao99";
 const BUNNY_API_KEY = "d498d56e-361b-4a1e-9edb9eb63e3b-2e6a-4c17";
 const BUNNY_STORAGE_HOST = "https://br.storage.bunnycdn.com";
@@ -193,12 +193,22 @@ async function salvarNovo(){
   if(capaFile.files.length) capa=await uploadCapa(capaFile.files[0]);
 
   if(tipo.value==="filme"){
-    await supabaseClient.from("filmes").insert({
-      titulo,descricao,categoria,
-      capa_url:capa,video_url:videoFilme.value,
-      tipo:"filme",ativo:true
+    const {error}=await supabaseClient.from("filmes").insert({
+      titulo:titulo.value,
+      descricao:descricao.value,
+      categoria:categoria.value,
+      capa_url:capa,
+      video_url:videoFilme.value,
+      tipo:"filme",
+      ativo:true
     });
+    if(error){alert(error.message);return;}
     return carregar();
+  }
+
+  if(!epsNovo.children.length){
+    alert("Adicione ao menos um episódio");
+    return;
   }
 
   const rows=[...epsNovo.children].map(e=>({
@@ -208,12 +218,14 @@ async function salvarNovo(){
     capa_url:capa,
     tipo:"serie",
     serie_nome:titulo.value,
-    temporada:temporadaNova.value,
-    episodio:e.querySelector(".ep").value,
+    temporada:Number(temporadaNova.value),
+    episodio:Number(e.querySelector(".ep").value),
     video_url:e.querySelector(".vid").value,
     ativo:true
   }));
-  await supabaseClient.from("filmes").insert(rows);
+
+  const {error}=await supabaseClient.from("filmes").insert(rows);
+  if(error){alert(error.message);return;}
   carregar();
 }
 
@@ -247,8 +259,10 @@ async function salvarEdicao(){
 
   if(atual.tipo==="filme"){
     await supabaseClient.from("filmes").update({
-      titulo:mTitulo.value,descricao:mDescricao.value,
-      categoria:mCategoria.value,capa_url:capa,
+      titulo:mTitulo.value,
+      descricao:mDescricao.value,
+      categoria:mCategoria.value,
+      capa_url:capa,
       video_url:mVideo.value
     }).eq("id",atual.id);
     fecharModal();return carregar();
@@ -266,17 +280,18 @@ async function salvarEdicao(){
     capa_url:capa,
     tipo:"serie",
     serie_nome:mTitulo.value,
-    temporada:mTemporada.value,
-    episodio:e.querySelector(".ep").value,
+    temporada:Number(mTemporada.value),
+    episodio:Number(e.querySelector(".ep").value),
     video_url:e.querySelector(".vid").value,
     ativo:true
   }));
+
   await supabaseClient.from("filmes").insert(rows);
   fecharModal();carregar();
 }
 
 async function excluirAtual(){
-  if(!confirm("Tem certeza que deseja excluir?")) return;
+  if(!confirm("Tem certeza?")) return;
   if(atual.tipo==="filme"){
     await supabaseClient.from("filmes").delete().eq("id",atual.id);
   }else{
