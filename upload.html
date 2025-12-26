@@ -28,7 +28,6 @@ body{
   color:var(--text);
   font-family:Inter,Arial,sans-serif;
 }
-
 .wrapper{
   height:100vh;
   padding:16px 20px;
@@ -36,8 +35,6 @@ body{
   grid-template-columns:360px 1fr;
   gap:16px;
 }
-
-/* PANEL */
 .panel{
   background:var(--panel);
   border-radius:16px;
@@ -45,8 +42,6 @@ body{
   display:flex;
   flex-direction:column;
 }
-
-/* FORM */
 label{font-size:12px;margin-top:8px;font-weight:600}
 input,textarea,select{
   width:100%;
@@ -56,7 +51,6 @@ input,textarea,select{
   border:none;
   background:var(--input);
   color:#fff;
-  font-size:13px;
 }
 textarea{resize:none;min-height:80px}
 button{
@@ -66,23 +60,11 @@ button{
   border-radius:10px;
   background:var(--accent);
   color:#fff;
-  font-size:14px;
   cursor:pointer;
 }
 button:hover{background:var(--accent-dark)}
-
-/* LIST */
-.list{
-  flex:1;
-  overflow-y:auto;
-}
-.grid{
-  display:grid;
-  grid-template-columns:repeat(10,1fr);
-  gap:8px;
-}
-
-/* CARD */
+.list{flex:1;overflow-y:auto}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
 .card{
   background:var(--card);
   border-radius:10px;
@@ -90,50 +72,14 @@ button:hover{background:var(--accent-dark)}
   font-size:11px;
   cursor:pointer;
 }
-.card img{
-  width:100%;
-  height:110px;
-  object-fit:cover;
-}
+.card img{width:100%;height:110px;object-fit:cover}
 .card .box{padding:6px}
 .card small{color:var(--muted)}
 
-/* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.85);
-  backdrop-filter:blur(10px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:999;
-}
-.modal-box{
-  width:560px;
-  max-height:90vh;          /* 🔥 CHAVE */
-  background:var(--panel);
-  border-radius:18px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-}
-.modal-cover{
-  height:220px;
-  flex-shrink:0;
-}
-.modal-cover img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-.modal-body{
-  padding:16px;
-  overflow-y:auto;          /* 🔥 CHAVE */
-}
+/* EPISÓDIOS */
 .episodio-row{
   display:grid;
-  grid-template-columns:60px 1fr auto;
+  grid-template-columns:70px 1fr auto;
   gap:8px;
   margin-top:8px;
 }
@@ -141,15 +87,33 @@ button:hover{background:var(--accent-dark)}
   background:var(--danger);
   padding:6px 10px;
 }
-.add-ep{background:#1f2937}
-.modal-actions{
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  backdrop-filter:blur(10px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+.modal-box{
+  width:560px;
+  max-height:90vh;
+  background:var(--panel);
+  border-radius:18px;
+  overflow:hidden;
   display:flex;
-  gap:10px;
-  margin-top:14px;
+  flex-direction:column;
 }
-.modal-actions button:last-child{
-  background:#1f2937;
-}
+.modal-cover{height:220px}
+.modal-cover img{width:100%;height:100%;object-fit:cover}
+.modal-body{padding:16px;overflow-y:auto}
+.modal-actions{display:flex;gap:10px;margin-top:14px}
+.modal-actions button:last-child{background:#1f2937}
+.add-ep{background:#1f2937}
 </style>
 </head>
 
@@ -157,7 +121,7 @@ button:hover{background:var(--accent-dark)}
 
 <div class="wrapper">
 
-<!-- FORM NOVO -->
+<!-- CADASTRO -->
 <div class="panel">
   <h3>Novo</h3>
 
@@ -173,14 +137,17 @@ button:hover{background:var(--accent-dark)}
   <label>URL da Capa</label>
   <input id="capa">
 
-  <label>ID do Vídeo (filme)</label>
-  <input id="videoId">
-
   <label>Tipo</label>
-  <select id="tipo">
+  <select id="tipo" onchange="toggleSerieNovo()">
     <option value="filme">Filme</option>
     <option value="serie">Série</option>
   </select>
+
+  <div id="serieNovo" style="display:none">
+    <h4>Episódios</h4>
+    <div id="epsNovo"></div>
+    <button class="add-ep" onclick="addEpNovo()">➕ Adicionar episódio</button>
+  </div>
 
   <button onclick="salvarNovo()">Salvar</button>
 </div>
@@ -196,12 +163,9 @@ button:hover{background:var(--accent-dark)}
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="modal" style="display:none">
+<div id="modal" class="modal">
   <div class="modal-box">
-    <div class="modal-cover">
-      <img id="mCapa">
-    </div>
-
+    <div class="modal-cover"><img id="mCapa"></div>
     <div class="modal-body">
       <label>Título</label>
       <input id="mTitulo">
@@ -212,10 +176,10 @@ button:hover{background:var(--accent-dark)}
       <label>Categoria</label>
       <input id="mCategoria">
 
-      <div id="boxEpisodios" style="display:none">
+      <div id="serieEdit" style="display:none">
         <h4>Episódios</h4>
-        <div id="listaEps"></div>
-        <button class="add-ep" onclick="addEp()">➕ Adicionar episódio</button>
+        <div id="epsEdit"></div>
+        <button class="add-ep" onclick="addEpEdit()">➕ Adicionar episódio</button>
       </div>
 
       <div class="modal-actions">
@@ -232,16 +196,10 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-let registros=[];
-let registroAtual=null;
-const modal=document.getElementById("modal");
+let registros=[], atual=null;
 
 async function carregar(){
-  const {data}=await supabaseClient
-    .from("filmes")
-    .select("*")
-    .order("created_at",{ascending:false});
-
+  const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
   registros=data||[];
   status.textContent=`${registros.length} registros`;
   render();
@@ -263,79 +221,91 @@ function render(){
   });
 }
 
-function abrirModal(r){
-  registroAtual=r;
-  modal.style.display="flex";
+/* -------- CADASTRO NOVO -------- */
+function toggleSerieNovo(){
+  serieNovo.style.display = tipo.value==="serie" ? "block":"none";
+  if(tipo.value==="serie" && epsNovo.children.length===0){
+    addEpNovo();
+  }
+}
+function addEpNovo(){
+  const n=epsNovo.children.length+1;
+  const div=document.createElement("div");
+  div.className="episodio-row";
+  div.innerHTML=`
+    <input type="number" value="${n}">
+    <input placeholder="ID do vídeo">
+    <button onclick="this.parentNode.remove()">✖</button>`;
+  epsNovo.appendChild(div);
+}
+async function salvarNovo(){
+  if(tipo.value==="filme"){
+    await supabaseClient.from("filmes").insert({
+      titulo,descricao,categoria,capa_url:capa.value,
+      video_url:epsNovo.value||null,
+      tipo:"filme",ativo:true
+    });
+    carregar();return;
+  }
+  const inserts=[...epsNovo.children].map(r=>({
+    titulo:titulo.value,
+    descricao:descricao.value,
+    categoria:categoria.value,
+    capa_url:capa.value,
+    video_url:r.children[1].value,
+    tipo:"serie",
+    serie_nome:titulo.value,
+    episodio:r.children[0].value,
+    ativo:true
+  }));
+  await supabaseClient.from("filmes").insert(inserts);
+  carregar();
+}
 
+/* -------- MODAL -------- */
+function abrirModal(r){
+  atual=r;
+  modal.style.display="flex";
   mCapa.src=r.capa_url;
   mTitulo.value=r.titulo;
   mDescricao.value=r.descricao||"";
   mCategoria.value=r.categoria||"";
-
-  listaEps.innerHTML="";
+  epsEdit.innerHTML="";
   if(r.tipo==="serie"){
-    boxEpisodios.style.display="block";
-    registros
-      .filter(e=>e.tipo==="serie" && e.serie_nome===r.serie_nome)
+    serieEdit.style.display="block";
+    registros.filter(e=>e.tipo==="serie"&&e.serie_nome===r.serie_nome)
       .sort((a,b)=>a.episodio-b.episodio)
-      .forEach(e=>addEp(e.episodio,e.video_url));
+      .forEach(e=>addEpEdit(e.episodio,e.video_url));
   }else{
-    boxEpisodios.style.display="none";
+    serieEdit.style.display="none";
   }
 }
-
-function fecharModal(){
-  modal.style.display="none";
-  registroAtual=null;
-}
-
-function addEp(ep="",vid=""){
-  const n=listaEps.children.length+1;
+function addEpEdit(ep="",vid=""){
+  const n=epsEdit.children.length+1;
   const div=document.createElement("div");
   div.className="episodio-row";
   div.innerHTML=`
     <input type="number" value="${ep||n}">
-    <input placeholder="ID do vídeo" value="${vid}">
-    <button onclick="this.parentNode.remove()">✖</button>
-  `;
-  listaEps.appendChild(div);
+    <input value="${vid||""}">
+    <button onclick="this.parentNode.remove()">✖</button>`;
+  epsEdit.appendChild(div);
 }
-
+function fecharModal(){modal.style.display="none";atual=null;}
 async function salvarEdicao(){
-  if(!registroAtual) return;
-
-  await supabaseClient
-    .from("filmes")
-    .delete()
-    .eq("serie_nome",registroAtual.serie_nome||registroAtual.titulo);
-
-  const inserts=[...listaEps.children].map(r=>({
+  await supabaseClient.from("filmes").delete().eq("serie_nome",atual.serie_nome||atual.titulo);
+  const inserts=[...epsEdit.children].map(r=>({
     titulo:mTitulo.value,
     descricao:mDescricao.value,
     categoria:mCategoria.value,
-    capa_url:registroAtual.capa_url,
+    capa_url:atual.capa_url,
     video_url:r.children[1].value,
     tipo:"serie",
     serie_nome:mTitulo.value,
     episodio:r.children[0].value,
     ativo:true
   }));
-
   await supabaseClient.from("filmes").insert(inserts);
   fecharModal();
-  carregar();
-}
-
-async function salvarNovo(){
-  await supabaseClient.from("filmes").insert({
-    titulo:titulo.value,
-    descricao:descricao.value,
-    categoria:categoria.value,
-    capa_url:capa.value,
-    video_url:videoId.value,
-    tipo:tipo.value,
-    ativo:true
-  });
   carregar();
 }
 
