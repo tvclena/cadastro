@@ -138,12 +138,19 @@ button:hover{background:var(--accent-dark)}
   <input id="capa">
 
   <label>Tipo</label>
-  <select id="tipo" onchange="toggleSerieNovo()">
+  <select id="tipo" onchange="toggleTipo()">
     <option value="filme">Filme</option>
     <option value="serie">Série</option>
   </select>
 
-  <div id="serieNovo" style="display:none">
+  <!-- FILME -->
+  <div id="boxFilme">
+    <label>ID do Vídeo (obrigatório)</label>
+    <input id="videoFilme">
+  </div>
+
+  <!-- SÉRIE -->
+  <div id="boxSerie" style="display:none">
     <h4>Episódios</h4>
     <div id="epsNovo"></div>
     <button class="add-ep" onclick="addEpNovo()">➕ Adicionar episódio</button>
@@ -162,7 +169,7 @@ button:hover{background:var(--accent-dark)}
 
 </div>
 
-<!-- MODAL -->
+<!-- MODAL EDIÇÃO -->
 <div id="modal" class="modal">
   <div class="modal-box">
     <div class="modal-cover"><img id="mCapa"></div>
@@ -198,6 +205,14 @@ const supabaseClient = supabase.createClient(
 
 let registros=[], atual=null;
 
+function toggleTipo(){
+  boxFilme.style.display = tipo.value==="filme" ? "block":"none";
+  boxSerie.style.display = tipo.value==="serie" ? "block":"none";
+  if(tipo.value==="serie" && epsNovo.children.length===0){
+    addEpNovo();
+  }
+}
+
 async function carregar(){
   const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
   registros=data||[];
@@ -221,13 +236,7 @@ function render(){
   });
 }
 
-/* -------- CADASTRO NOVO -------- */
-function toggleSerieNovo(){
-  serieNovo.style.display = tipo.value==="serie" ? "block":"none";
-  if(tipo.value==="serie" && epsNovo.children.length===0){
-    addEpNovo();
-  }
-}
+/* -------- NOVO -------- */
 function addEpNovo(){
   const n=epsNovo.children.length+1;
   const div=document.createElement("div");
@@ -238,26 +247,50 @@ function addEpNovo(){
     <button onclick="this.parentNode.remove()">✖</button>`;
   epsNovo.appendChild(div);
 }
+
 async function salvarNovo(){
   if(tipo.value==="filme"){
+    if(!videoFilme.value.trim()){
+      alert("Informe o ID do vídeo do FILME");
+      return;
+    }
     await supabaseClient.from("filmes").insert({
-      titulo,descricao,categoria,capa_url:capa.value,
-      video_url:epsNovo.value||null,
-      tipo:"filme",ativo:true
+      titulo:titulo.value,
+      descricao:descricao.value,
+      categoria:categoria.value,
+      capa_url:capa.value,
+      video_url:videoFilme.value,
+      tipo:"filme",
+      ativo:true
     });
     carregar();return;
   }
-  const inserts=[...epsNovo.children].map(r=>({
+
+  const eps=[...epsNovo.children];
+  if(eps.length===0){
+    alert("Adicione pelo menos um episódio");
+    return;
+  }
+
+  for(const e of eps){
+    if(!e.children[1].value.trim()){
+      alert("Todos os episódios precisam de ID de vídeo");
+      return;
+    }
+  }
+
+  const inserts=eps.map(e=>({
     titulo:titulo.value,
     descricao:descricao.value,
     categoria:categoria.value,
     capa_url:capa.value,
-    video_url:r.children[1].value,
+    video_url:e.children[1].value,
     tipo:"serie",
     serie_nome:titulo.value,
-    episodio:r.children[0].value,
+    episodio:e.children[0].value,
     ativo:true
   }));
+
   await supabaseClient.from("filmes").insert(inserts);
   carregar();
 }
@@ -280,6 +313,7 @@ function abrirModal(r){
     serieEdit.style.display="none";
   }
 }
+
 function addEpEdit(ep="",vid=""){
   const n=epsEdit.children.length+1;
   const div=document.createElement("div");
@@ -290,20 +324,27 @@ function addEpEdit(ep="",vid=""){
     <button onclick="this.parentNode.remove()">✖</button>`;
   epsEdit.appendChild(div);
 }
-function fecharModal(){modal.style.display="none";atual=null;}
+
+function fecharModal(){
+  modal.style.display="none";
+  atual=null;
+}
+
 async function salvarEdicao(){
   await supabaseClient.from("filmes").delete().eq("serie_nome",atual.serie_nome||atual.titulo);
-  const inserts=[...epsEdit.children].map(r=>({
+
+  const inserts=[...epsEdit.children].map(e=>({
     titulo:mTitulo.value,
     descricao:mDescricao.value,
     categoria:mCategoria.value,
     capa_url:atual.capa_url,
-    video_url:r.children[1].value,
+    video_url:e.children[1].value,
     tipo:"serie",
     serie_nome:mTitulo.value,
-    episodio:r.children[0].value,
+    episodio:e.children[0].value,
     ativo:true
   }));
+
   await supabaseClient.from("filmes").insert(inserts);
   fecharModal();
   carregar();
