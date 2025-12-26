@@ -8,21 +8,92 @@
 
 <style>
 :root{
-  --panel:#0f1424;--card:#151a30;--input:#0b1020;
-  --accent:#dc2626;--danger:#7f1d1d;
-  --text:#e5e7eb;--muted:#9ca3af;
+  --panel:#0f1424;
+  --card:#151a30;
+  --input:#0b1020;
+  --accent:#dc2626;
+  --danger:#7f1d1d;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
 }
+
 *{box-sizing:border-box}
-body{margin:0;height:100vh;background:#05060c;color:var(--text);font-family:Inter,Arial}
-.wrapper{height:100vh;padding:16px;display:grid;grid-template-columns:360px 1fr;gap:16px}
-.panel{background:var(--panel);border-radius:16px;padding:16px;display:flex;flex-direction:column}
-input,textarea,select{width:100%;margin-top:6px;padding:8px;border-radius:8px;border:none;background:var(--input);color:#fff}
-button{margin-top:12px;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;cursor:pointer}
+body{
+  margin:0;height:100vh;
+  background:#05060c;
+  color:var(--text);
+  font-family:Inter,Arial;
+}
+
+.wrapper{
+  height:100vh;
+  padding:16px;
+  display:grid;
+  grid-template-columns:360px 1fr;
+  gap:16px;
+}
+
+.panel{
+  background:var(--panel);
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+}
+
+input,textarea,select{
+  width:100%;
+  margin-top:6px;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:var(--input);
+  color:var(--accent);
+  font-weight:600;
+}
+
+input::placeholder,
+textarea::placeholder{
+  color:#fff;
+  opacity:.9;
+}
+
+button{
+  margin-top:12px;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:var(--accent);
+  color:#fff;
+  cursor:pointer;
+  font-weight:600;
+}
+
 .list{flex:1;overflow:auto}
-.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
-.card{background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer;font-size:11px}
-.card img{width:100%;height:110px;object-fit:cover}
-.card .box{padding:6px}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:8px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:10px;
+  overflow:hidden;
+  cursor:pointer;
+  font-size:11px;
+}
+
+.card img{
+  width:100%;
+  height:110px;
+  object-fit:cover;
+}
+
+.card .box{
+  padding:6px;
+}
 
 .episodio-row{
   display:grid;
@@ -30,34 +101,82 @@ button{margin-top:12px;padding:12px;border:none;border-radius:10px;background:va
   gap:6px;
   margin-top:6px;
 }
+
 .episodio-row button{
   background:var(--danger);
   padding:6px 8px;
 }
 
-/* MODAL */
+/* ================= MODAL NOVO ================= */
+
 .modal{
-  position:fixed;inset:0;
+  position:fixed;
+  inset:0;
   background:rgba(0,0,0,.85);
   display:none;
   align-items:center;
   justify-content:center;
   z-index:999;
 }
+
 .modal-box{
-  width:560px;
+  width:900px;
   max-height:90vh;
   background:var(--panel);
-  border-radius:18px;
+  border-radius:22px;
+  display:grid;
+  grid-template-columns:300px 1fr;
   overflow:hidden;
+}
+
+.modal-left{
+  background:#020617;
+  padding:12px;
   display:flex;
   flex-direction:column;
+  gap:10px;
 }
-.modal-cover{height:220px}
-.modal-cover img{width:100%;height:100%;object-fit:cover}
-.modal-body{padding:16px;overflow:auto}
-.modal-actions{display:flex;gap:10px;margin-top:12px}
-.modal-actions button:last-child{background:#1f2937}
+
+.modal-left img{
+  width:100%;
+  height:360px;
+  object-fit:cover;
+  border-radius:14px;
+}
+
+.modal-left label{
+  color:var(--accent);
+  font-size:12px;
+  font-weight:700;
+}
+
+.modal-right{
+  padding:20px;
+  overflow:auto;
+}
+
+.modal-right h3{
+  margin:0 0 12px;
+  color:var(--accent);
+}
+
+.modal-right label{
+  margin-top:10px;
+  display:block;
+  color:var(--accent);
+  font-size:12px;
+  font-weight:700;
+}
+
+.modal-actions{
+  display:flex;
+  gap:12px;
+  margin-top:18px;
+}
+
+.modal-actions button:last-child{
+  background:#1f2937;
+}
 </style>
 </head>
 
@@ -78,26 +197,15 @@ const supabaseClient = supabase.createClient(
 /* ================= UPLOAD ================= */
 async function uploadBunny(file){
   const name = Date.now()+"_"+file.name.replace(/\s+/g,"_");
-
-  const BUNNY_STORAGE_ENDPOINT = "https://br.storage.bunnycdn.com";
-  const url = `${BUNNY_STORAGE_ENDPOINT}/${BUNNY_STORAGE_ZONE}/capas/${name}`;
-
+  const url = `https://br.storage.bunnycdn.com/${BUNNY_STORAGE_ZONE}/capas/${name}`;
   const res = await fetch(url,{
-    method: "PUT",
-    headers:{
-      "AccessKey": BUNNY_API_KEY,
-      "Content-Type": file.type
-    },
-    body: file
+    method:"PUT",
+    headers:{AccessKey:BUNNY_API_KEY,"Content-Type":file.type},
+    body:file
   });
-
-  if(!res.ok){
-    throw new Error("Erro ao enviar imagem: " + res.status);
-  }
-
+  if(!res.ok) throw new Error("Erro upload");
   return `${BUNNY_CDN_URL}/capas/${name}`;
 }
-
 </script>
 
 <div class="wrapper">
@@ -105,29 +213,23 @@ async function uploadBunny(file){
 <!-- CADASTRO -->
 <div class="panel">
   <h3>Novo</h3>
-
   <input id="titulo" placeholder="Título">
   <textarea id="descricao" placeholder="Descrição"></textarea>
   <input id="categoria" placeholder="Categoria">
-
   <label>Capa</label>
   <input type="file" id="capaFile" accept="image/*">
-
   <select id="tipo" onchange="toggleNovo()">
     <option value="filme">Filme</option>
     <option value="serie">Série</option>
   </select>
-
   <div id="boxFilme">
     <input id="videoFilme" placeholder="ID do vídeo (filme)">
   </div>
-
   <div id="boxSerie" style="display:none">
     <h4>Episódios</h4>
     <div id="epsNovo"></div>
-    <button onclick="addEpNovo()">➕ Adicionar episódio</button>
+    <button onclick="addEpNovo()">➕ Episódio</button>
   </div>
-
   <button onclick="salvarNovo()">Salvar</button>
 </div>
 
@@ -141,32 +243,42 @@ async function uploadBunny(file){
 <!-- MODAL -->
 <div id="modal" class="modal">
   <div class="modal-box">
-    <div class="modal-cover"><img id="mCapa"></div>
-    <div class="modal-body">
 
+    <div class="modal-left">
+      <img id="mCapa">
+      <label>Trocar capa</label>
+      <input type="file" id="mCapaFile" accept="image/*">
+    </div>
+
+    <div class="modal-right">
+      <h3>Editar Cadastro</h3>
+
+      <label>Título</label>
       <input id="mTitulo">
+
+      <label>Descrição</label>
       <textarea id="mDescricao"></textarea>
+
+      <label>Categoria</label>
       <input id="mCategoria">
 
       <div id="mFilme">
+        <label>Vídeo</label>
         <input id="mVideo">
       </div>
 
       <div id="mSerie">
-        <h4>Episódios</h4>
+        <label>Episódios</label>
         <div id="epsEdit"></div>
         <button onclick="addEpEdit()">➕ Episódio</button>
       </div>
-
-      <label>Trocar capa</label>
-      <input type="file" id="mCapaFile" accept="image/*">
 
       <div class="modal-actions">
         <button onclick="salvarEdicao()">Salvar</button>
         <button onclick="fecharModal()">Cancelar</button>
       </div>
-
     </div>
+
   </div>
 </div>
 
@@ -192,45 +304,10 @@ function render(){
   });
 }
 
-/* NOVO */
-function toggleNovo(){
-  boxFilme.style.display = tipo.value==="filme"?"block":"none";
-  boxSerie.style.display = tipo.value==="serie"?"block":"none";
-  if(tipo.value==="serie" && !epsNovo.children.length) addEpNovo();
-}
-function addEpNovo(){
-  const n=epsNovo.children.length+1;
-  const d=document.createElement("div");
-  d.className="episodio-row";
-  d.innerHTML=`<input type="number" value="${n}"><input placeholder="ID do vídeo"><button onclick="this.parentNode.remove()">✖</button>`;
-  epsNovo.appendChild(d);
-}
-async function salvarNovo(){
-  let capaUrl="";
-  if(capaFile.files.length) capaUrl=await uploadBunny(capaFile.files[0]);
-
-  if(tipo.value==="filme"){
-    if(!videoFilme.value.trim()) return alert("ID do vídeo é obrigatório");
-    await supabaseClient.from("filmes").insert({
-      titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
-      capa_url:capaUrl,video_url:videoFilme.value,tipo:"filme",ativo:true
-    });
-    return carregar();
-  }
-
-  await supabaseClient.from("filmes").insert(
-    [...epsNovo.children].map(e=>({
-      titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
-      capa_url:capaUrl,video_url:e.children[1].value,
-      tipo:"serie",serie_nome:titulo.value,episodio:e.children[0].value,ativo:true
-    }))
-  );
-  carregar();
-}
-
 /* MODAL */
 function abrirModal(r){
-  atual=r; modal.style.display="flex";
+  atual=r;
+  modal.style.display="flex";
   mCapa.src=r.capa_url;
   mTitulo.value=r.titulo;
   mDescricao.value=r.descricao||"";
@@ -249,12 +326,14 @@ function abrirModal(r){
       .forEach(e=>addEpEdit(e.episodio,e.video_url));
   }
 }
+
 function addEpEdit(ep="",vid=""){
   const d=document.createElement("div");
   d.className="episodio-row";
   d.innerHTML=`<input type="number" value="${ep}"><input value="${vid}"><button onclick="this.parentNode.remove()">✖</button>`;
   epsEdit.appendChild(d);
 }
+
 function fecharModal(){modal.style.display="none";}
 
 async function salvarEdicao(){
@@ -263,21 +342,30 @@ async function salvarEdicao(){
 
   if(atual.tipo==="filme"){
     await supabaseClient.from("filmes").update({
-      titulo:mTitulo.value,descricao:mDescricao.value,categoria:mCategoria.value,
-      capa_url:capaUrl,video_url:mVideo.value
+      titulo:mTitulo.value,
+      descricao:mDescricao.value,
+      categoria:mCategoria.value,
+      capa_url:capaUrl,
+      video_url:mVideo.value
     }).eq("id",atual.id);
-    fecharModal(); return carregar();
+  }else{
+    await supabaseClient.from("filmes").delete().eq("serie_nome",atual.serie_nome);
+    await supabaseClient.from("filmes").insert(
+      [...epsEdit.children].map(e=>({
+        titulo:mTitulo.value,
+        descricao:mDescricao.value,
+        categoria:mCategoria.value,
+        capa_url:capaUrl,
+        video_url:e.children[1].value,
+        tipo:"serie",
+        serie_nome:mTitulo.value,
+        episodio:e.children[0].value,
+        ativo:true
+      }))
+    );
   }
-
-  await supabaseClient.from("filmes").delete().eq("serie_nome",atual.serie_nome);
-  await supabaseClient.from("filmes").insert(
-    [...epsEdit.children].map(e=>({
-      titulo:mTitulo.value,descricao:mDescricao.value,categoria:mCategoria.value,
-      capa_url:capaUrl,video_url:e.children[1].value,
-      tipo:"serie",serie_nome:mTitulo.value,episodio:e.children[0].value,ativo:true
-    }))
-  );
-  fecharModal(); carregar();
+  fecharModal();
+  carregar();
 }
 
 carregar();
