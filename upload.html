@@ -28,7 +28,6 @@ body{
   color:var(--text);
   font-family:Inter,Arial,sans-serif;
 }
-
 .wrapper{
   height:100vh;
   padding:16px 20px;
@@ -36,8 +35,6 @@ body{
   grid-template-columns:360px 1fr;
   gap:16px;
 }
-
-/* PANEL */
 .panel{
   background:var(--panel);
   border-radius:16px;
@@ -46,8 +43,6 @@ body{
   flex-direction:column;
 }
 h3{margin:0 0 10px}
-
-/* FORM */
 label{font-size:12px;margin-top:8px;font-weight:600}
 input,textarea,select{
   width:100%;
@@ -70,6 +65,7 @@ button{
   font-size:14px;
   cursor:pointer;
 }
+.hidden{display:none}
 
 /* LIST */
 .filters{
@@ -78,18 +74,8 @@ button{
   gap:8px;
   margin-bottom:10px;
 }
-.list{
-  flex:1;
-  overflow-y:auto;
-  padding-right:6px;
-}
-.grid{
-  display:grid;
-  grid-template-columns:repeat(10,1fr);
-  gap:8px;
-}
-
-/* CARD */
+.list{flex:1;overflow-y:auto;padding-right:6px;}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:8px;}
 .card{
   background:var(--card);
   border-radius:10px;
@@ -122,11 +108,17 @@ button{
 .danger{background:#7f1d1d}
 .toggle{background:#111827}
 
-/* STATUS */
-.status{font-size:13px;margin-bottom:8px}
-.ok{color:var(--ok)}
-.err{color:var(--err)}
-.hidden{display:none}
+/* EPISÓDIOS */
+.episodio-row{
+  display:grid;
+  grid-template-columns:1fr 2fr auto;
+  gap:6px;
+  margin-top:6px;
+}
+.episodio-row button{
+  background:#7f1d1d;
+  padding:6px 8px;
+}
 </style>
 </head>
 
@@ -137,7 +129,6 @@ button{
 <!-- FORM -->
 <div class="panel">
   <h3>Novo / Editar</h3>
-  <input type="hidden" id="editId">
 
   <label>Título</label>
   <input id="titulo">
@@ -146,32 +137,12 @@ button{
   <textarea id="descricao"></textarea>
 
   <label>Categoria</label>
-  <input id="categoria" list="categorias">
-
-  <datalist id="categorias">
-    <option>Romance</option>
-    <option>Suspense</option>
-    <option>Terror</option>
-    <option>Ação</option>
-    <option>Aventura</option>
-    <option>Drama</option>
-    <option>Comédia</option>
-    <option>Ficção Científica</option>
-    <option>Fantasia</option>
-    <option>Documentário</option>
-    <option>Animação</option>
-    <option>Policial</option>
-    <option>Thriller</option>
-    <option>Mistério</option>
-    <option>Guerra</option>
-    <option>Musical</option>
-    <option>Biografia</option>
-  </datalist>
+  <input id="categoria">
 
   <label>URL da Capa</label>
   <input id="capa">
 
-  <label>ID do Vídeo</label>
+  <label>ID do Vídeo (Filme)</label>
   <input id="videoId">
 
   <label>Tipo</label>
@@ -180,24 +151,33 @@ button{
     <option value="serie">Série</option>
   </select>
 
+  <!-- SÉRIE -->
   <div id="serieBox" class="hidden">
+
     <label>Série</label>
     <input id="serie_nome">
-    <label>Temp.</label>
-    <input id="temporada" type="number">
-    <label>Epis.</label>
-    <input id="episodio" type="number">
-  </div>
 
-  <label>Views</label>
-  <input id="views" disabled>
+    <label>Temporada</label>
+    <input id="temporada" type="number">
+
+    <div style="margin-top:10px;font-size:13px;font-weight:600">
+      Episódios
+    </div>
+
+    <div id="episodios"></div>
+
+    <button type="button" onclick="addEpisodio()" style="background:#1f2937">
+      ➕ Adicionar episódio
+    </button>
+
+  </div>
 
   <button onclick="salvar()">Salvar</button>
 </div>
 
 <!-- LIST -->
 <div class="panel">
-  <div class="status" id="status">Carregando…</div>
+  <div id="status">Carregando…</div>
 
   <div class="filters">
     <input id="search" placeholder="Buscar título">
@@ -228,11 +208,27 @@ const statusEl=document.getElementById("status");
 
 function toggleSerie(){
   serieBox.classList.toggle("hidden", tipo.value!=="serie");
+  if(tipo.value==="serie" && episodios.children.length===0){
+    addEpisodio();
+  }
+}
+
+function addEpisodio(ep="",vid=""){
+  const div=document.createElement("div");
+  div.className="episodio-row";
+  div.innerHTML=`
+    <input type="number" placeholder="Ep." value="${ep}">
+    <input placeholder="ID do vídeo" value="${vid}">
+    <button onclick="this.parentNode.remove()">✖</button>
+  `;
+  episodios.appendChild(div);
 }
 
 async function carregar(){
-  const {data,error}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
-  if(error){statusEl.textContent=error.message;return;}
+  const {data}=await supabaseClient
+    .from("filmes")
+    .select("*")
+    .order("created_at",{ascending:false});
   filmes=data||[];
   statusEl.textContent=`${filmes.length} registros`;
   render();
@@ -255,65 +251,57 @@ function render(){
       <img src="${f.capa_url}">
       <div class="box">
         <h4>${f.titulo}</h4>
-        <small>${f.categoria||""}</small><br>
-        <small>👁 ${f.total_visualizacoes||0}</small>
-        <div class="actions">
-          <button onclick='editar(${JSON.stringify(f)})'>✏️</button>
-          <button class="toggle" onclick='toggleAtivo("${f.id}",${f.ativo})'>${f.ativo?"ON":"OFF"}</button>
-          <button class="danger" onclick='excluir("${f.id}")'>🗑️</button>
-        </div>
+        <small>${f.tipo} ${f.episodio?"• Ep "+f.episodio:""}</small>
       </div>`;
     lista.appendChild(d);
   });
 }
 
-function editar(f){
-  editId.value=f.id;
-  titulo.value=f.titulo;
-  descricao.value=f.descricao||"";
-  categoria.value=f.categoria||"";
-  capa.value=f.capa_url;
-  videoId.value=f.video_url;
-  tipo.value=f.tipo;
-  views.value=f.total_visualizacoes||0;
-  toggleSerie();
-  serie_nome.value=f.serie_nome||"";
-  temporada.value=f.temporada||"";
-  episodio.value=f.episodio||"";
-}
-
 async function salvar(){
-  const payload={
-    titulo:titulo.value,
-    descricao:descricao.value,
-    categoria:categoria.value,
-    capa_url:capa.value,
-    video_url:videoId.value,
-    tipo:tipo.value,
-    ativo:true
-  };
-  if(tipo.value==="serie"){
-    payload.serie_nome=serie_nome.value;
-    payload.temporada=temporada.value||null;
-    payload.episodio=episodio.value||null;
+
+  if(tipo.value==="filme"){
+    await supabaseClient.from("filmes").insert({
+      titulo:titulo.value,
+      descricao:descricao.value,
+      categoria:categoria.value,
+      capa_url:capa.value,
+      video_url:videoId.value,
+      tipo:"filme",
+      ativo:true
+    });
+    location.reload();
+    return;
   }
 
-  if(editId.value){
-    await supabaseClient.from("filmes").update(payload).eq("id",editId.value);
-  }else{
-    await supabaseClient.from("filmes").insert(payload);
+  const rows=[...episodios.children];
+  const inserts=[];
+
+  rows.forEach(r=>{
+    const ep=r.children[0].value;
+    const vid=r.children[1].value;
+    if(ep && vid){
+      inserts.push({
+        titulo:titulo.value,
+        descricao:descricao.value,
+        categoria:categoria.value,
+        capa_url:capa.value,
+        video_url:vid,
+        tipo:"serie",
+        serie_nome:serie_nome.value,
+        temporada:temporada.value||null,
+        episodio:ep,
+        ativo:true
+      });
+    }
+  });
+
+  if(inserts.length===0){
+    alert("Adicione episódios");
+    return;
   }
+
+  await supabaseClient.from("filmes").insert(inserts);
   location.reload();
-}
-
-async function excluir(id){
-  if(!confirm("Excluir registro?"))return;
-  await supabaseClient.from("filmes").delete().eq("id",id);
-  carregar();
-}
-async function toggleAtivo(id,ativo){
-  await supabaseClient.from("filmes").update({ativo:!ativo}).eq("id",id);
-  carregar();
 }
 
 search.oninput=render;
