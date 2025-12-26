@@ -193,6 +193,23 @@ th{background:#161616;color:#ccc}
   <input id="buscaUsuario" placeholder="🔍 Buscar usuário por nome ou email">
 </div>
 
+<script>
+const input = document.getElementById("buscaUsuario");
+
+input.addEventListener("focus", () => {
+  window.parent.document.body.classList.add("search-open");
+});
+
+input.addEventListener("blur", () => {
+  setTimeout(() => {
+    window.parent.document.body.classList.remove("search-open");
+  }, 200);
+});
+</script>
+
+
+
+  
 <!-- USUÁRIOS -->
 <div class="section-title">👤 Usuários</div>
 <div class="table-container">
