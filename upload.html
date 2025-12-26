@@ -28,6 +28,7 @@ body{
   color:var(--text);
   font-family:Inter,Arial,sans-serif;
 }
+
 .wrapper{
   height:100vh;
   padding:16px 20px;
@@ -35,13 +36,28 @@ body{
   grid-template-columns:360px 1fr;
   gap:16px;
 }
+
+/* PANELS */
 .panel{
   background:var(--panel);
   border-radius:16px;
   padding:16px;
   display:flex;
   flex-direction:column;
+  min-height:0;
 }
+.form-panel{
+  overflow-y:auto;
+}
+.form-panel::-webkit-scrollbar{
+  width:6px;
+}
+.form-panel::-webkit-scrollbar-thumb{
+  background:#1f2937;
+  border-radius:6px;
+}
+
+/* FORM */
 h3{margin:0 0 10px}
 label{font-size:12px;margin-top:8px;font-weight:600}
 input,textarea,select{
@@ -74,8 +90,18 @@ button{
   gap:8px;
   margin-bottom:10px;
 }
-.list{flex:1;overflow-y:auto;padding-right:6px;}
-.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:8px;}
+.list{
+  flex:1;
+  overflow-y:auto;
+  padding-right:6px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:8px;
+}
+
+/* CARD */
 .card{
   background:var(--card);
   border-radius:10px;
@@ -96,17 +122,6 @@ button{
   text-overflow:ellipsis;
 }
 .card small{color:var(--muted)}
-.actions{
-  display:flex;
-  gap:4px;
-  margin-top:4px;
-}
-.actions button{
-  padding:4px;
-  font-size:10px;
-}
-.danger{background:#7f1d1d}
-.toggle{background:#111827}
 
 /* EPISÓDIOS */
 .episodio-row{
@@ -127,7 +142,7 @@ button{
 <div class="wrapper">
 
 <!-- FORM -->
-<div class="panel">
+<div class="panel form-panel">
   <h3>Novo / Editar</h3>
 
   <label>Título</label>
@@ -153,9 +168,6 @@ button{
 
   <!-- SÉRIE -->
   <div id="serieBox" class="hidden">
-
-    <label>Série</label>
-    <input id="serie_nome">
 
     <label>Temporada</label>
     <input id="temporada" type="number">
@@ -251,7 +263,7 @@ function render(){
       <img src="${f.capa_url}">
       <div class="box">
         <h4>${f.titulo}</h4>
-        <small>${f.tipo} ${f.episodio?"• Ep "+f.episodio:""}</small>
+        <small>${f.tipo}${f.episodio ? " • Ep "+f.episodio : ""}</small>
       </div>`;
     lista.appendChild(d);
   });
@@ -287,7 +299,7 @@ async function salvar(){
         capa_url:capa.value,
         video_url:vid,
         tipo:"serie",
-        serie_nome:serie_nome.value,
+        serie_nome:titulo.value,
         temporada:temporada.value||null,
         episodio:ep,
         ativo:true
@@ -296,7 +308,7 @@ async function salvar(){
   });
 
   if(inserts.length===0){
-    alert("Adicione episódios");
+    alert("Adicione pelo menos um episódio");
     return;
   }
 
