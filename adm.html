@@ -39,9 +39,17 @@ header h1 span{color:#22c55e}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* TABLE */
-table{width:100%;border-collapse:collapse;background:#1b1b1e;border-radius:14px}
-th,td{padding:14px;border-bottom:1px solid #2b2b2b;font-size:14px}
+table{
+  width:100%;border-collapse:collapse;
+  background:#1b1b1e;border-radius:14px;
+  overflow:hidden
+}
+th,td{
+  padding:14px;border-bottom:1px solid #2b2b2b;
+  font-size:14px
+}
 th{color:#aaa;background:#161618}
+tr:hover{background:#232326}
 
 /* SWITCH */
 .switch{position:relative;width:44px;height:22px}
@@ -53,8 +61,9 @@ th{color:#aaa;background:#161618}
 .slider:before{
   content:"";position:absolute;
   width:16px;height:16px;
-  top:3px;left:3px;background:#fff;
-  border-radius:50%;transition:.2s
+  top:3px;left:3px;
+  background:#fff;border-radius:50%;
+  transition:.2s
 }
 input:checked + .slider{background:#22c55e}
 input:checked + .slider:before{transform:translateX(22px)}
@@ -92,32 +101,43 @@ small{color:#aaa}
 
 <div class="container">
 
-<div class="toolbar">
-  <input id="busca" class="search" placeholder="Buscar por email, nome ou @username">
-  <button class="btn green" onclick="ativarSessaoMassa()">Ativar sessão única</button>
-  <button class="btn gray" onclick="desativarSessaoMassa()">Desativar sessão única</button>
-  <button class="btn red" onclick="derrubarSessaoMassa()">Derrubar sessões</button>
-</div>
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <input id="busca" class="search" placeholder="Buscar por email, nome ou @username">
+    <button class="btn green" onclick="ativarSessaoMassa()">Ativar sessão única</button>
+    <button class="btn gray" onclick="desativarSessaoMassa()">Desativar sessão única</button>
+    <button class="btn red" onclick="derrubarSessaoMassa()">Derrubar sessões</button>
+  </div>
 
-<table id="tabelaUsuarios">
-<thead>
-<tr>
-<th><input type="checkbox" id="checkAll"></th>
-<th>Email</th><th>Nome</th><th>Usuário</th><th>Sessão única</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+  <!-- USUÁRIOS -->
+  <table id="tabelaUsuarios">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="checkAll"></th>
+        <th>Email</th>
+        <th>Nome</th>
+        <th>Usuário</th>
+        <th>Sessão única</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<div class="logs">
-<h2>Histórico de logins</h2>
-<table id="tabelaLogs">
-<thead>
-<tr><th>Email</th><th>IP</th><th>Navegador</th><th>Data</th></tr>
-</thead>
-<tbody></tbody>
-</table>
-</div>
+  <!-- LOGS -->
+  <div class="logs">
+    <h2>Histórico de logins</h2>
+    <table id="tabelaLogs">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>IP</th>
+          <th>Navegador</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
 </div>
 
@@ -127,109 +147,193 @@ const sb = supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-let usuarios=[];
+let usuarios = [];
 
+/* LOADING */
 function setLoading(v){
   document.getElementById("loading").style.display = v ? "flex" : "none";
+}
+
+/* CONFIRMAÇÃO REAL NO BANCO */
+async function aguardarConfirmacao(id, campo, valorEsperado, tentativas = 12){
+  for(let i=0;i<tentativas;i++){
+    const { data } = await sb
+      .from("usuarios")
+      .select(campo)
+      .eq("id", id)
+      .single();
+
+    if(data && data[campo] === valorEsperado){
+      return true;
+    }
+
+    await new Promise(r=>setTimeout(r,400));
+  }
+  return false;
 }
 
 /* LOAD USERS */
 async function carregarUsuarios(){
   setLoading(true);
-  const { data } = await sb.from("usuarios")
+  const { data } = await sb
+    .from("usuarios")
     .select("id,email,nome_usuario,username,controle_sessao");
-  usuarios=data||[];
+
+  usuarios = data || [];
   renderUsuarios(usuarios);
   setLoading(false);
 }
 
 /* RENDER */
 function renderUsuarios(lista){
-  const tbody=document.querySelector("#tabelaUsuarios tbody");
-  tbody.innerHTML="";
+  const tbody = document.querySelector("#tabelaUsuarios tbody");
+  tbody.innerHTML = "";
+
   lista.forEach(u=>{
-    tbody.innerHTML+=`
-    <tr>
-      <td><input type="checkbox" class="ck" value="${u.id}"></td>
-      <td>${u.email}</td>
-      <td>${u.nome_usuario||"-"}</td>
-      <td>@${u.username||"-"}</td>
-      <td>
-        <label class="switch">
-          <input type="checkbox"
-            ${u.controle_sessao?"checked":""}
-            onchange="toggleSessao(this,'${u.id}')">
-          <span class="slider"></span>
-        </label>
-      </td>
-    </tr>`;
+    tbody.innerHTML += `
+      <tr>
+        <td><input type="checkbox" class="ck" value="${u.id}"></td>
+        <td>${u.email}</td>
+        <td>${u.nome_usuario || "-"}</td>
+        <td>@${u.username || "-"}</td>
+        <td>
+          <label class="switch">
+            <input type="checkbox"
+              ${u.controle_sessao ? "checked":""}
+              onchange="toggleSessao(this,'${u.id}')">
+            <span class="slider"></span>
+          </label>
+        </td>
+      </tr>
+    `;
   });
 }
 
-/* SWITCH REAL */
-async function toggleSessao(el,id){
-  el.disabled=true;
+/* SEARCH */
+busca.oninput = ()=>{
+  const q = busca.value.toLowerCase();
+  renderUsuarios(
+    usuarios.filter(u =>
+      (u.email||"").toLowerCase().includes(q) ||
+      (u.nome_usuario||"").toLowerCase().includes(q) ||
+      (u.username||"").toLowerCase().includes(q)
+    )
+  );
+};
+
+/* CHECK ALL */
+checkAll.onchange = ()=>{
+  document.querySelectorAll(".ck").forEach(c=>c.checked=checkAll.checked);
+};
+
+/* HELPERS */
+function selecionados(){
+  return [...document.querySelectorAll(".ck:checked")].map(c=>c.value);
+}
+
+/* SWITCH INDIVIDUAL */
+async function toggleSessao(el, id){
+  el.disabled = true;
   setLoading(true);
 
-  const novo = !el.checked;
+  const valorDesejado = !el.checked;
+
+  const { error } = await sb
+    .from("usuarios")
+    .update({ controle_sessao: valorDesejado })
+    .eq("id", id);
+
+  if(error){
+    alert("Erro ao salvar");
+    el.disabled = false;
+    setLoading(false);
+    return;
+  }
+
+  await aguardarConfirmacao(id,"controle_sessao",valorDesejado);
+  await carregarUsuarios();
+
+  el.disabled = false;
+  setLoading(false);
+}
+
+/* MASS ACTIONS */
+async function ativarSessaoMassa(){
+  const ids = selecionados();
+  if(!ids.length) return alert("Selecione usuários");
+
+  setLoading(true);
 
   await sb.from("usuarios")
-    .update({ controle_sessao: novo })
-    .eq("id",id);
+    .update({ controle_sessao:true })
+    .in("id",ids);
+
+  for(const id of ids){
+    await aguardarConfirmacao(id,"controle_sessao",true);
+  }
 
   await carregarUsuarios();
   setLoading(false);
 }
 
-/* MASS */
-function selecionados(){
-  return [...document.querySelectorAll(".ck:checked")].map(c=>c.value);
-}
-
-async function ativarSessaoMassa(){
-  const ids=selecionados(); if(!ids.length)return alert("Selecione usuários");
-  setLoading(true);
-  await sb.from("usuarios").update({controle_sessao:true}).in("id",ids);
-  await carregarUsuarios();
-}
-
 async function desativarSessaoMassa(){
-  const ids=selecionados(); if(!ids.length)return alert("Selecione usuários");
+  const ids = selecionados();
+  if(!ids.length) return alert("Selecione usuários");
+
   setLoading(true);
-  await sb.from("usuarios").update({controle_sessao:false}).in("id",ids);
+
+  await sb.from("usuarios")
+    .update({ controle_sessao:false })
+    .in("id",ids);
+
+  for(const id of ids){
+    await aguardarConfirmacao(id,"controle_sessao",false);
+  }
+
   await carregarUsuarios();
+  setLoading(false);
 }
 
 async function derrubarSessaoMassa(){
-  const ids=selecionados();
-  if(!ids.length||!confirm("Derrubar sessões?"))return;
+  const ids = selecionados();
+  if(!ids.length || !confirm("Derrubar sessões dos selecionados?")) return;
+
   setLoading(true);
+
   for(const id of ids){
     await sb.from("usuarios")
-      .update({session_token:crypto.randomUUID()})
-      .eq("id",id);
+      .update({ session_token: crypto.randomUUID() })
+      .eq("id", id);
   }
+
   setLoading(false);
   alert("Sessões derrubadas");
 }
 
 /* LOGS */
 async function carregarLogs(){
-  const { data } = await sb.from("login_logs")
-    .select("*").order("created_at",{ascending:false}).limit(50);
-  const tbody=document.querySelector("#tabelaLogs tbody");
-  tbody.innerHTML="";
+  const { data } = await sb
+    .from("login_logs")
+    .select("*")
+    .order("created_at",{ascending:false})
+    .limit(50);
+
+  const tbody = document.querySelector("#tabelaLogs tbody");
+  tbody.innerHTML = "";
+
   data.forEach(l=>{
-    tbody.innerHTML+=`
-    <tr>
-      <td>${l.email}</td>
-      <td>${l.ip||"-"}</td>
-      <td><small>${l.user_agent||"-"}</small></td>
-      <td>${new Date(l.created_at).toLocaleString("pt-BR")}</td>
-    </tr>`;
+    tbody.innerHTML += `
+      <tr>
+        <td>${l.email}</td>
+        <td>${l.ip || "-"}</td>
+        <td><small>${l.user_agent || "-"}</small></td>
+        <td>${new Date(l.created_at).toLocaleString("pt-BR")}</td>
+      </tr>
+    `;
   });
 }
 
+/* INIT */
 carregarUsuarios();
 carregarLogs();
 </script>
