@@ -14,7 +14,7 @@ body{margin:0;background:#0f0f10;color:#fff}
 /* HEADER */
 header{
   height:64px;padding:0 32px;
-  display:flex;align-items:center;
+  display:flex;align-items:center;justify-content:space-between;
   background:#1b1b1e;border-bottom:1px solid #2b2b2b
 }
 header h1 span{color:#22c55e}
@@ -48,13 +48,14 @@ th,td{
   font-size:14px
 }
 th{color:#aaa;background:#161618}
+tr:hover{background:#232326}
 
 /* FLAG */
 .flag{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-width:110px;
+  min-width:120px;
   padding:6px 12px;
   border-radius:999px;
   font-size:12px;
@@ -99,21 +100,43 @@ small{color:#aaa}
 
 <div class="container">
 
-<div class="toolbar">
-  <input id="busca" class="search" placeholder="Buscar por email, nome ou @username">
-</div>
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <input id="busca" class="search" placeholder="Buscar por email, nome ou @username">
+    <button class="btn green" onclick="ativarSessaoMassa()">Ativar sessão única</button>
+    <button class="btn gray" onclick="desativarSessaoMassa()">Desativar sessão única</button>
+    <button class="btn red" onclick="derrubarSessaoMassa()">Derrubar sessões</button>
+  </div>
 
-<table id="tabelaUsuarios">
-<thead>
-<tr>
-<th>Email</th>
-<th>Nome</th>
-<th>Usuário</th>
-<th>Sessão única</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+  <!-- USUÁRIOS -->
+  <table id="tabelaUsuarios">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="checkAll"></th>
+        <th>Email</th>
+        <th>Nome</th>
+        <th>Usuário</th>
+        <th>Sessão única</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- LOGS -->
+  <div class="logs">
+    <h2>Histórico de logins</h2>
+    <table id="tabelaLogs">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>IP</th>
+          <th>Navegador</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
 </div>
 
@@ -124,13 +147,14 @@ const sb = supabase.createClient(
 );
 
 let usuarios = [];
-let estados = {}; // estado visual por id
+let estados = {};
 
+/* LOADING */
 function setLoading(v){
   document.getElementById("loading").style.display = v ? "flex" : "none";
 }
 
-/* CONFIRMAÇÃO REAL */
+/* CONFIRMAÇÃO REAL NO BANCO */
 async function confirmarBanco(id, valor, tentativas=12){
   for(let i=0;i<tentativas;i++){
     const { data } = await sb
@@ -147,7 +171,7 @@ async function confirmarBanco(id, valor, tentativas=12){
   return false;
 }
 
-/* LOAD */
+/* LOAD USERS */
 async function carregarUsuarios(){
   setLoading(true);
   const { data } = await sb
@@ -177,12 +201,13 @@ function renderUsuarios(){
 
     tbody.innerHTML += `
       <tr>
+        <td><input type="checkbox" class="ck" value="${u.id}"></td>
         <td>${u.email}</td>
         <td>${u.nome_usuario||"-"}</td>
         <td>@${u.username||"-"}</td>
         <td>
           <span class="flag ${estado}"
-            onclick="alterarSessao('${u.id}',${u.controle_sessao})">
+            onclick="alterarSessao('${u.id}')">
             ${label}
           </span>
         </td>
@@ -191,15 +216,38 @@ function renderUsuarios(){
   });
 }
 
-/* ALTERAÇÃO COM FLAG REAL */
-async function alterarSessao(id, atual){
+/* SEARCH */
+busca.oninput = ()=>{
+  const q = busca.value.toLowerCase();
+  renderUsuarios(
+    usuarios.filter(u =>
+      (u.email||"").toLowerCase().includes(q) ||
+      (u.nome_usuario||"").toLowerCase().includes(q) ||
+      (u.username||"").toLowerCase().includes(q)
+    )
+  );
+};
+
+/* CHECK ALL */
+checkAll.onchange = ()=>{
+  document.querySelectorAll(".ck").forEach(c=>c.checked=checkAll.checked);
+};
+
+/* HELPERS */
+function selecionados(){
+  return [...document.querySelectorAll(".ck:checked")].map(c=>c.value);
+}
+
+/* ALTERAÇÃO INDIVIDUAL */
+async function alterarSessao(id){
   if(estados[id]==="saving") return;
+
+  const user = usuarios.find(u=>u.id===id);
+  const novo = !user.controle_sessao;
 
   estados[id] = "saving";
   renderUsuarios();
   setLoading(true);
-
-  const novo = !atual;
 
   const { error } = await sb
     .from("usuarios")
@@ -215,19 +263,94 @@ async function alterarSessao(id, atual){
 
   const confirmado = await confirmarBanco(id, novo);
 
-  if(!confirmado){
-    estados[id] = "error";
-  }else{
+  if(confirmado){
+    user.controle_sessao = novo;
     estados[id] = novo ? "ativo" : "inativo";
-    usuarios.find(u=>u.id===id).controle_sessao = novo;
+  }else{
+    estados[id] = "error";
   }
 
   renderUsuarios();
   setLoading(false);
 }
 
+/* MASS ACTIONS */
+async function ativarSessaoMassa(){
+  const ids = selecionados();
+  if(!ids.length) return alert("Selecione usuários");
+
+  setLoading(true);
+  await sb.from("usuarios").update({controle_sessao:true}).in("id",ids);
+
+  for(const id of ids){
+    await confirmarBanco(id,true);
+    const u = usuarios.find(x=>x.id===id);
+    if(u){ u.controle_sessao=true; estados[id]="ativo"; }
+  }
+
+  renderUsuarios();
+  setLoading(false);
+}
+
+async function desativarSessaoMassa(){
+  const ids = selecionados();
+  if(!ids.length) return alert("Selecione usuários");
+
+  setLoading(true);
+  await sb.from("usuarios").update({controle_sessao:false}).in("id",ids);
+
+  for(const id of ids){
+    await confirmarBanco(id,false);
+    const u = usuarios.find(x=>x.id===id);
+    if(u){ u.controle_sessao=false; estados[id]="inativo"; }
+  }
+
+  renderUsuarios();
+  setLoading(false);
+}
+
+async function derrubarSessaoMassa(){
+  const ids = selecionados();
+  if(!ids.length || !confirm("Derrubar sessões dos selecionados?")) return;
+
+  setLoading(true);
+
+  for(const id of ids){
+    await sb.from("usuarios")
+      .update({ session_token: crypto.randomUUID() })
+      .eq("id",id);
+  }
+
+  setLoading(false);
+  alert("Sessões derrubadas");
+}
+
+/* LOGS */
+async function carregarLogs(){
+  const { data } = await sb
+    .from("login_logs")
+    .select("*")
+    .order("created_at",{ascending:false})
+    .limit(50);
+
+  const tbody = document.querySelector("#tabelaLogs tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(l=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${l.email}</td>
+        <td>${l.ip||"-"}</td>
+        <td><small>${l.user_agent||"-"}</small></td>
+        <td>${new Date(l.created_at).toLocaleString("pt-BR")}</td>
+      </tr>
+    `;
+  });
+}
+
 /* INIT */
 carregarUsuarios();
+carregarLogs();
 </script>
 
 </body>
