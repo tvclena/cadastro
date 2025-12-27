@@ -12,48 +12,33 @@
   --bg:#0b0f17;
   --panel:#0f1420;
   --card:#1c2230;
-  --card-2:#222a3a;
   --hover:#2f3a52;
-  --primary:#00a8ff;
-  --accent:#4dd0e1;
+  --primary:#00c6ff;
+  --secondary:#0072ff;
   --text:#ffffff;
   --muted:#9aa4b2;
 }
 
-*{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
+*{box-sizing:border-box;font-family:Inter,system-ui}
 
 body{
   margin:0;
-  background:linear-gradient(180deg,#0b0f17,#070a11);
+  background:radial-gradient(circle at top,#10182a,#070a11);
   color:var(--text);
   overflow:hidden;
 }
 
-/* TOP BAR */
+/* TOP */
 .topbar{
   height:64px;
   display:flex;
   align-items:center;
-  gap:18px;
+  gap:16px;
   padding:0 22px;
-  background:rgba(11,15,23,.95);
   border-bottom:1px solid #1c2230;
 }
 
-.topbar b{
-  font-size:18px;
-  letter-spacing:.3px;
-}
-
-.topbar select,
-.topbar input[type=date]{
-  background:var(--card);
-  color:var(--text);
-  border:none;
-  padding:10px 14px;
-  border-radius:10px;
-  font-size:14px;
-}
+.topbar b{font-size:18px}
 
 /* LAYOUT */
 .layout{
@@ -62,7 +47,7 @@ body{
   height:calc(100vh - 64px);
 }
 
-/* LEFT – BIBLIOTECA */
+/* LEFT */
 .library{
   background:var(--panel);
   border-right:1px solid #1c2230;
@@ -72,7 +57,6 @@ body{
 
 .library header{
   padding:14px;
-  border-bottom:1px solid #1c2230;
 }
 
 .library input{
@@ -82,7 +66,6 @@ body{
   border:none;
   background:var(--card);
   color:var(--text);
-  font-size:14px;
 }
 
 /* FILMES */
@@ -106,42 +89,23 @@ body{
 
 .filme:hover{
   background:var(--hover);
-  transform:translateY(-1px);
-}
-
-.filme img{
-  width:56px;
-  height:82px;
-  border-radius:10px;
-  object-fit:cover;
-}
-
-.filme b{
-  font-size:14px;
-  display:block;
-}
-
-.filme small{
-  font-size:12px;
-  color:var(--muted);
+  transform:translateY(-2px);
 }
 
 /* GRADE */
 .grade{
-  position:relative;
+  padding:16px;
   overflow:auto;
-  padding:12px;
 }
 
 .timeline{
   position:relative;
-  height:130px;
+  height:140px;
+  border-radius:16px;
   background:linear-gradient(180deg,#0f1420,#0b0f17);
-  border-radius:14px;
   border:1px solid #1c2230;
 }
 
-/* HORAS */
 .hour{
   position:absolute;
   top:0;
@@ -152,49 +116,45 @@ body{
 
 .hour-label{
   position:absolute;
-  top:8px;
+  top:10px;
   font-size:12px;
   color:var(--muted);
   transform:translateX(-50%);
 }
 
-/* DROP */
 .drop-area{
   position:absolute;
   left:0;
   right:0;
-  bottom:12px;
-  height:80px;
+  bottom:16px;
+  height:90px;
 }
 
 /* BLOCO */
 .block{
   position:absolute;
   top:0;
-  height:70px;
-  background:linear-gradient(135deg,var(--primary),var(--accent));
-  border-radius:14px;
-  padding:10px;
-  cursor:pointer;
-  overflow:hidden;
-  box-shadow:0 6px 20px rgba(0,0,0,.35);
+  height:80px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  border-radius:16px;
+  padding:10px 12px;
+  color:#fff;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+  transition:.2s;
 }
 
-.block b{
-  font-size:14px;
-  display:block;
+.block:hover{
+  transform:scale(1.03);
+  z-index:5;
 }
 
-.block small{
-  font-size:11px;
-  opacity:.85;
-}
+.block b{font-size:14px}
+.block small{font-size:11px;opacity:.85}
 </style>
 </head>
 
 <body>
 
-<!-- TOP BAR -->
 <div class="topbar">
   <b>📺 Grade de Programação</b>
   <select id="canalSelect"></select>
@@ -203,7 +163,6 @@ body{
 
 <div class="layout">
 
-  <!-- BIBLIOTECA -->
   <div class="library">
     <header>
       <input id="search" placeholder="Buscar filme / categoria / duração">
@@ -211,7 +170,6 @@ body{
     <div class="filmes" id="filmes"></div>
   </div>
 
-  <!-- GRADE -->
   <div class="grade">
     <div class="timeline" id="timeline">
       <div class="drop-area" id="dropArea"></div>
@@ -221,124 +179,107 @@ body{
 </div>
 
 <script>
-/* ==============================
-   SUPABASE
-============================== */
+/* SUPABASE */
 const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
-
-const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
-
-/* ============================== */
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const DAY_MINUTES = 1440;
 const timeline = document.getElementById("timeline");
 const dropArea = document.getElementById("dropArea");
 
-/* TIMELINE 24H */
+/* TIMELINE */
 for(let h=0;h<24;h++){
-  const left = (h*60/DAY_MINUTES)*100;
-
-  const line=document.createElement("div");
-  line.className="hour";
-  line.style.left=left+"%";
-  timeline.appendChild(line);
-
-  const label=document.createElement("div");
-  label.className="hour-label";
-  label.style.left=left+"%";
-  label.innerText=`${String(h).padStart(2,"0")}:00`;
-  timeline.appendChild(label);
+  const left=(h*60/DAY_MINUTES)*100;
+  timeline.insertAdjacentHTML("beforeend",
+    `<div class="hour" style="left:${left}%"></div>
+     <div class="hour-label" style="left:${left}%">${String(h).padStart(2,"0")}:00</div>`
+  );
 }
 
-/* CANAIS */
+/* LOAD CANAIS */
 async function loadCanais(){
-  const { data } = await db.from("canais").select("*").order("ordem");
-  const select=document.getElementById("canalSelect");
-  select.innerHTML="";
-  data?.forEach(c=>{
-    const o=document.createElement("option");
-    o.value=c.id;
-    o.innerText=c.nome;
-    select.appendChild(o);
+  const {data}=await db.from("canais").select("*").order("ordem");
+  const s=document.getElementById("canalSelect");
+  s.innerHTML="";
+  data.forEach(c=>{
+    s.innerHTML+=`<option value="${c.id}">${c.nome}</option>`;
   });
 }
 
-/* FILMES */
+/* LOAD FILMES */
 async function loadFilmes(){
-  const { data } = await db
-    .from("filmes")
-    .select("*")
-    .eq("ativo",true)
-    .order("titulo");
-
+  const {data}=await db.from("filmes").select("*").eq("ativo",true);
   const lista=document.getElementById("filmes");
   lista.innerHTML="";
-
-  data?.forEach(f=>{
-    const div=document.createElement("div");
-    div.className="filme";
-    div.draggable=true;
-    div.dataset.duracao=f.duracao_minutos || 120;
-    div.dataset.titulo=f.titulo;
-
-    div.innerHTML=`
-      <img src="${f.capa_url}">
-      <div>
+  data.forEach(f=>{
+    lista.innerHTML+=`
+      <div class="filme" draggable="true"
+        data-id="${f.id}"
+        data-titulo="${f.titulo}"
+        data-duracao="${f.duracao_minutos||120}">
         <b>${f.titulo}</b>
-        <small>${f.categoria || "—"} • ${div.dataset.duracao} min</small>
-      </div>
-    `;
+        <small>${f.categoria||""} • ${f.duracao_minutos||120} min</small>
+      </div>`;
+  });
 
-    div.addEventListener("dragstart",e=>{
-      e.dataTransfer.setData("text",JSON.stringify(div.dataset));
+  document.querySelectorAll(".filme").forEach(el=>{
+    el.addEventListener("dragstart",e=>{
+      e.dataTransfer.setData("text",JSON.stringify(el.dataset));
     });
-
-    lista.appendChild(div);
   });
 }
 
 /* DROP */
 dropArea.addEventListener("dragover",e=>e.preventDefault());
 
-dropArea.addEventListener("drop",e=>{
-  const data=JSON.parse(e.dataTransfer.getData("text"));
+dropArea.addEventListener("drop",async e=>{
+  const d=JSON.parse(e.dataTransfer.getData("text"));
   const rect=dropArea.getBoundingClientRect();
-  const x=e.clientX-rect.left;
-  const startMin=Math.floor((x/rect.width)*DAY_MINUTES);
-  createBlock(data.titulo,startMin,parseInt(data.duracao));
+  const start=Math.floor(((e.clientX-rect.left)/rect.width)*DAY_MINUTES);
+  await salvarProgramacao(d,start);
 });
 
-/* BLOCO */
-function createBlock(titulo,start,duracao){
-  let remaining=duracao;
-  let currentStart=start;
+/* SALVAR */
+async function salvarProgramacao(d,start){
+  const dur=parseInt(d.duracao);
+  const canal=document.getElementById("canalSelect").value;
+  const data=document.getElementById("data").value;
 
-  while(remaining>0){
-    const block=document.createElement("div");
-    block.className="block";
+  let inicio=start;
+  let restante=dur;
 
-    const maxToday=DAY_MINUTES-currentStart;
-    const thisDur=Math.min(remaining,maxToday);
+  while(restante>0){
+    const fim=Math.min(inicio+restante,1440);
 
-    block.style.left=(currentStart/DAY_MINUTES)*100+"%";
-    block.style.width=(thisDur/DAY_MINUTES)*100+"%";
-    block.innerHTML=`<b>${titulo}</b><small>${thisDur} min</small>`;
+    await db.from("programacao").insert({
+      canal_id:canal,
+      filme_id:d.id,
+      data:data,
+      inicio_minuto:inicio,
+      fim_minuto:fim,
+      duracao_minutos:(fim-inicio),
+      continua_dia_seguinte:(fim===1440)
+    });
 
-    dropArea.appendChild(block);
-
-    remaining-=thisDur;
-    currentStart=0;
+    renderBlock(d.titulo,inicio,fim-inicio);
+    restante-= (fim-inicio);
+    inicio=0;
   }
 }
 
-/* INIT */
-document.getElementById("data").value =
-  new Date().toISOString().split("T")[0];
+/* RENDER */
+function renderBlock(titulo,start,dur){
+  const block=document.createElement("div");
+  block.className="block";
+  block.style.left=(start/DAY_MINUTES)*100+"%";
+  block.style.width=(dur/DAY_MINUTES)*100+"%";
+  block.innerHTML=`<b>${titulo}</b><small>${dur} min</small>`;
+  dropArea.appendChild(block);
+}
 
+/* INIT */
+document.getElementById("data").value=new Date().toISOString().split("T")[0];
 loadCanais();
 loadFilmes();
 </script>
