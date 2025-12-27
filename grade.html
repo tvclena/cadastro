@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>EPG – Criação de Grade</title>
+<title>📺 EPG – Criação de Grade</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -10,107 +10,138 @@
 <style>
 :root{
   --bg:#0b0f17;
-  --panel:#141821;
+  --panel:#0f1420;
   --card:#1c2230;
-  --hover:#2a3244;
+  --card-2:#222a3a;
+  --hover:#2f3a52;
   --primary:#00a8ff;
+  --accent:#4dd0e1;
   --text:#ffffff;
   --muted:#9aa4b2;
 }
 
-*{box-sizing:border-box;font-family:Inter,system-ui}
+*{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
 
 body{
   margin:0;
-  background:var(--bg);
+  background:linear-gradient(180deg,#0b0f17,#070a11);
   color:var(--text);
   overflow:hidden;
 }
 
-/* TOP */
+/* TOP BAR */
 .topbar{
-  height:60px;
+  height:64px;
   display:flex;
   align-items:center;
-  gap:16px;
-  padding:0 20px;
+  gap:18px;
+  padding:0 22px;
+  background:rgba(11,15,23,.95);
   border-bottom:1px solid #1c2230;
 }
 
-select,input[type=date]{
+.topbar b{
+  font-size:18px;
+  letter-spacing:.3px;
+}
+
+.topbar select,
+.topbar input[type=date]{
   background:var(--card);
   color:var(--text);
   border:none;
-  padding:8px 12px;
-  border-radius:8px;
+  padding:10px 14px;
+  border-radius:10px;
+  font-size:14px;
 }
 
 /* LAYOUT */
 .layout{
   display:grid;
-  grid-template-columns:300px 1fr;
-  height:calc(100vh - 60px);
+  grid-template-columns:320px 1fr;
+  height:calc(100vh - 64px);
 }
 
-/* LEFT */
+/* LEFT – BIBLIOTECA */
 .library{
-  background:#0e131d;
+  background:var(--panel);
   border-right:1px solid #1c2230;
   display:flex;
   flex-direction:column;
 }
 
 .library header{
-  padding:12px;
+  padding:14px;
+  border-bottom:1px solid #1c2230;
 }
 
 .library input{
   width:100%;
-  padding:10px;
-  border-radius:8px;
+  padding:12px;
+  border-radius:12px;
   border:none;
   background:var(--card);
   color:var(--text);
+  font-size:14px;
 }
 
+/* FILMES */
 .filmes{
   overflow-y:auto;
-  padding:12px;
+  padding:14px;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:12px;
 }
 
 .filme{
   display:flex;
-  gap:10px;
+  gap:12px;
   background:var(--card);
-  padding:8px;
-  border-radius:10px;
+  padding:10px;
+  border-radius:14px;
   cursor:grab;
+  transition:.2s;
+}
+
+.filme:hover{
+  background:var(--hover);
+  transform:translateY(-1px);
 }
 
 .filme img{
-  width:50px;
-  height:74px;
-  border-radius:6px;
+  width:56px;
+  height:82px;
+  border-radius:10px;
   object-fit:cover;
 }
 
-.filme small{color:var(--muted)}
+.filme b{
+  font-size:14px;
+  display:block;
+}
+
+.filme small{
+  font-size:12px;
+  color:var(--muted);
+}
 
 /* GRADE */
 .grade{
   position:relative;
   overflow:auto;
+  padding:12px;
 }
 
 .timeline{
   position:relative;
-  height:120px;
-  border-bottom:1px solid #1c2230;
+  height:130px;
+  background:linear-gradient(180deg,#0f1420,#0b0f17);
+  border-radius:14px;
+  border:1px solid #1c2230;
 }
 
+/* HORAS */
 .hour{
   position:absolute;
   top:0;
@@ -121,16 +152,19 @@ select,input[type=date]{
 
 .hour-label{
   position:absolute;
-  top:0;
+  top:8px;
   font-size:12px;
   color:var(--muted);
   transform:translateX(-50%);
 }
 
+/* DROP */
 .drop-area{
-  position:relative;
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:12px;
   height:80px;
-  margin-top:30px;
 }
 
 /* BLOCO */
@@ -138,22 +172,29 @@ select,input[type=date]{
   position:absolute;
   top:0;
   height:70px;
-  background:var(--primary);
-  border-radius:10px;
-  padding:8px;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  border-radius:14px;
+  padding:10px;
   cursor:pointer;
   overflow:hidden;
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+
+.block b{
+  font-size:14px;
+  display:block;
 }
 
 .block small{
   font-size:11px;
-  opacity:.8;
+  opacity:.85;
 }
 </style>
 </head>
 
 <body>
 
+<!-- TOP BAR -->
 <div class="topbar">
   <b>📺 Grade de Programação</b>
   <select id="canalSelect"></select>
@@ -181,16 +222,17 @@ select,input[type=date]{
 
 <script>
 /* ==============================
-   COLE SUAS CREDENCIAIS AQUI
+   SUPABASE
 ============================== */
 const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
-/* ============================== */
 
-const supabase = window.supabase.createClient(
+const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
+
+/* ============================== */
 
 const DAY_MINUTES = 1440;
 const timeline = document.getElementById("timeline");
@@ -199,6 +241,7 @@ const dropArea = document.getElementById("dropArea");
 /* TIMELINE 24H */
 for(let h=0;h<24;h++){
   const left = (h*60/DAY_MINUTES)*100;
+
   const line=document.createElement("div");
   line.className="hour";
   line.style.left=left+"%";
@@ -211,10 +254,11 @@ for(let h=0;h<24;h++){
   timeline.appendChild(label);
 }
 
-/* CARREGAR CANAIS */
+/* CANAIS */
 async function loadCanais(){
-  const {data}=await supabase.from("canais").select("*").order("nome");
+  const { data } = await db.from("canais").select("*").order("ordem");
   const select=document.getElementById("canalSelect");
+  select.innerHTML="";
   data?.forEach(c=>{
     const o=document.createElement("option");
     o.value=c.id;
@@ -223,29 +267,37 @@ async function loadCanais(){
   });
 }
 
-/* CARREGAR FILMES */
+/* FILMES */
 async function loadFilmes(){
-  const {data}=await supabase.from("filmes").select("*").eq("ativo",true);
+  const { data } = await db
+    .from("filmes")
+    .select("*")
+    .eq("ativo",true)
+    .order("titulo");
+
   const lista=document.getElementById("filmes");
   lista.innerHTML="";
+
   data?.forEach(f=>{
     const div=document.createElement("div");
     div.className="filme";
     div.draggable=true;
     div.dataset.duracao=f.duracao_minutos || 120;
     div.dataset.titulo=f.titulo;
+
     div.innerHTML=`
       <img src="${f.capa_url}">
       <div>
         <b>${f.titulo}</b>
-        <small>${f.categoria} • ${div.dataset.duracao} min</small>
+        <small>${f.categoria || "—"} • ${div.dataset.duracao} min</small>
       </div>
     `;
-    lista.appendChild(div);
 
     div.addEventListener("dragstart",e=>{
       e.dataTransfer.setData("text",JSON.stringify(div.dataset));
     });
+
+    lista.appendChild(div);
   });
 }
 
@@ -260,6 +312,7 @@ dropArea.addEventListener("drop",e=>{
   createBlock(data.titulo,startMin,parseInt(data.duracao));
 });
 
+/* BLOCO */
 function createBlock(titulo,start,duracao){
   let remaining=duracao;
   let currentStart=start;
@@ -271,12 +324,10 @@ function createBlock(titulo,start,duracao){
     const maxToday=DAY_MINUTES-currentStart;
     const thisDur=Math.min(remaining,maxToday);
 
-    const left=(currentStart/DAY_MINUTES)*100;
-    const width=(thisDur/DAY_MINUTES)*100;
+    block.style.left=(currentStart/DAY_MINUTES)*100+"%";
+    block.style.width=(thisDur/DAY_MINUTES)*100+"%";
+    block.innerHTML=`<b>${titulo}</b><small>${thisDur} min</small>`;
 
-    block.style.left=left+"%";
-    block.style.width=width+"%";
-    block.innerHTML=`<b>${titulo}</b><br><small>${thisDur} min</small>`;
     dropArea.appendChild(block);
 
     remaining-=thisDur;
@@ -285,7 +336,9 @@ function createBlock(titulo,start,duracao){
 }
 
 /* INIT */
-document.getElementById("data").value=new Date().toISOString().split("T")[0];
+document.getElementById("data").value =
+  new Date().toISOString().split("T")[0];
+
 loadCanais();
 loadFilmes();
 </script>
