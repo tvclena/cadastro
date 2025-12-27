@@ -158,8 +158,35 @@ const sb = supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-// 🔐 PROTEÇÃO BÁSICA (AJUSTE SE QUISER)
-const ADMIN_EMAILS = ["tvclena@gmail.com"];
+(async () => {
+  const email = localStorage.getItem("usuario_email");
+
+  // ❌ não está logado
+  if (!email) {
+    // guarda para onde queria ir
+    localStorage.setItem("redirect_after_login", "adm.html");
+    location.replace("login.html");
+    return;
+  }
+
+  // 🔎 verifica se é admin
+  const { data, error } = await sb
+    .from("usuarios")
+    .select("is_admin")
+    .eq("email", email)
+    .single();
+
+  if (error || !data || data.is_admin !== true) {
+    alert("Acesso negado");
+    location.replace("index.html");
+    return;
+  }
+
+  // ✅ autorizado
+  carregarUsuarios();
+  carregarLogs();
+})();
+
 
 (async ()=>{
   const email = localStorage.getItem("usuario_email");
