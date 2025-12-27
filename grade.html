@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>EPG – Criação de Grade</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#0b0f17;
+  --panel:#141821;
+  --card:#1c2230;
+  --hover:#2a3244;
+  --primary:#00a8ff;
+  --text:#ffffff;
+  --muted:#9aa4b2;
+}
+
+*{box-sizing:border-box;font-family:Inter,system-ui}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  overflow:hidden;
+}
+
+/* TOP */
+.topbar{
+  height:60px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:0 20px;
+  border-bottom:1px solid #1c2230;
+}
+
+select,input[type=date]{
+  background:var(--card);
+  color:var(--text);
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+}
+
+/* LAYOUT */
+.layout{
+  display:grid;
+  grid-template-columns:300px 1fr;
+  height:calc(100vh - 60px);
+}
+
+/* LEFT */
+.library{
+  background:#0e131d;
+  border-right:1px solid #1c2230;
+  display:flex;
+  flex-direction:column;
+}
+
+.library header{
+  padding:12px;
+}
+
+.library input{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  background:var(--card);
+  color:var(--text);
+}
+
+.filmes{
+  overflow-y:auto;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.filme{
+  display:flex;
+  gap:10px;
+  background:var(--card);
+  padding:8px;
+  border-radius:10px;
+  cursor:grab;
+}
+
+.filme img{
+  width:50px;
+  height:74px;
+  border-radius:6px;
+  object-fit:cover;
+}
+
+.filme small{color:var(--muted)}
+
+/* GRADE */
+.grade{
+  position:relative;
+  overflow:auto;
+}
+
+.timeline{
+  position:relative;
+  height:120px;
+  border-bottom:1px solid #1c2230;
+}
+
+.hour{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:1px;
+  background:#1c2230;
+}
+
+.hour-label{
+  position:absolute;
+  top:0;
+  font-size:12px;
+  color:var(--muted);
+  transform:translateX(-50%);
+}
+
+.drop-area{
+  position:relative;
+  height:80px;
+  margin-top:30px;
+}
+
+/* BLOCO */
+.block{
+  position:absolute;
+  top:0;
+  height:70px;
+  background:var(--primary);
+  border-radius:10px;
+  padding:8px;
+  cursor:pointer;
+  overflow:hidden;
+}
+
+.block small{
+  font-size:11px;
+  opacity:.8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <b>📺 Grade de Programação</b>
+  <select id="canalSelect"></select>
+  <input type="date" id="data">
+</div>
+
+<div class="layout">
+
+  <!-- BIBLIOTECA -->
+  <div class="library">
+    <header>
+      <input id="search" placeholder="Buscar filme / categoria / duração">
+    </header>
+    <div class="filmes" id="filmes"></div>
+  </div>
+
+  <!-- GRADE -->
+  <div class="grade">
+    <div class="timeline" id="timeline">
+      <div class="drop-area" id="dropArea"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ==============================
+   COLE SUAS CREDENCIAIS AQUI
+============================== */
+const SUPABASE_URL = "COLE_AQUI";
+const SUPABASE_ANON_KEY = "COLE_AQUI";
+/* ============================== */
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+const DAY_MINUTES = 1440;
+const timeline = document.getElementById("timeline");
+const dropArea = document.getElementById("dropArea");
+
+/* TIMELINE 24H */
+for(let h=0;h<24;h++){
+  const left = (h*60/DAY_MINUTES)*100;
+  const line=document.createElement("div");
+  line.className="hour";
+  line.style.left=left+"%";
+  timeline.appendChild(line);
+
+  const label=document.createElement("div");
+  label.className="hour-label";
+  label.style.left=left+"%";
+  label.innerText=`${String(h).padStart(2,"0")}:00`;
+  timeline.appendChild(label);
+}
+
+/* CARREGAR CANAIS */
+async function loadCanais(){
+  const {data}=await supabase.from("canais").select("*").order("nome");
+  const select=document.getElementById("canalSelect");
+  data?.forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c.id;
+    o.innerText=c.nome;
+    select.appendChild(o);
+  });
+}
+
+/* CARREGAR FILMES */
+async function loadFilmes(){
+  const {data}=await supabase.from("filmes").select("*").eq("ativo",true);
+  const lista=document.getElementById("filmes");
+  lista.innerHTML="";
+  data?.forEach(f=>{
+    const div=document.createElement("div");
+    div.className="filme";
+    div.draggable=true;
+    div.dataset.duracao=f.duracao_minutos || 120;
+    div.dataset.titulo=f.titulo;
+    div.innerHTML=`
+      <img src="${f.capa_url}">
+      <div>
+        <b>${f.titulo}</b>
+        <small>${f.categoria} • ${div.dataset.duracao} min</small>
+      </div>
+    `;
+    lista.appendChild(div);
+
+    div.addEventListener("dragstart",e=>{
+      e.dataTransfer.setData("text",JSON.stringify(div.dataset));
+    });
+  });
+}
+
+/* DROP */
+dropArea.addEventListener("dragover",e=>e.preventDefault());
+
+dropArea.addEventListener("drop",e=>{
+  const data=JSON.parse(e.dataTransfer.getData("text"));
+  const rect=dropArea.getBoundingClientRect();
+  const x=e.clientX-rect.left;
+  const startMin=Math.floor((x/rect.width)*DAY_MINUTES);
+  createBlock(data.titulo,startMin,parseInt(data.duracao));
+});
+
+function createBlock(titulo,start,duracao){
+  let remaining=duracao;
+  let currentStart=start;
+
+  while(remaining>0){
+    const block=document.createElement("div");
+    block.className="block";
+
+    const maxToday=DAY_MINUTES-currentStart;
+    const thisDur=Math.min(remaining,maxToday);
+
+    const left=(currentStart/DAY_MINUTES)*100;
+    const width=(thisDur/DAY_MINUTES)*100;
+
+    block.style.left=left+"%";
+    block.style.width=width+"%";
+    block.innerHTML=`<b>${titulo}</b><br><small>${thisDur} min</small>`;
+    dropArea.appendChild(block);
+
+    remaining-=thisDur;
+    currentStart=0;
+  }
+}
+
+/* INIT */
+document.getElementById("data").value=new Date().toISOString().split("T")[0];
+loadCanais();
+loadFilmes();
+</script>
+
+</body>
+</html>
