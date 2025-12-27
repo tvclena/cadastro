@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Admin | CLENA TV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box;font-family:Inter,Arial}
+body{
+  margin:0;
+  background:#0f0f10;
+  color:#fff;
+}
+
+header{
+  height:64px;
+  padding:0 32px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#1b1b1e;
+  border-bottom:1px solid #2b2b2b;
+}
+
+header h1 span{color:#e50914}
+
+.container{
+  padding:32px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#1b1b1e;
+  border-radius:14px;
+  overflow:hidden;
+}
+
+th,td{
+  padding:14px;
+  border-bottom:1px solid #2b2b2b;
+  font-size:14px;
+  text-align:left;
+}
+
+th{
+  color:#aaa;
+  background:#161618;
+}
+
+tr:hover{
+  background:#232326;
+}
+
+.switch{
+  position:relative;
+  width:46px;
+  height:24px;
+}
+.switch input{display:none}
+.slider{
+  position:absolute;
+  inset:0;
+  background:#555;
+  border-radius:999px;
+  cursor:pointer;
+  transition:.2s;
+}
+.slider::before{
+  content:"";
+  position:absolute;
+  width:18px;
+  height:18px;
+  top:3px;
+  left:3px;
+  background:#fff;
+  border-radius:50%;
+  transition:.2s;
+}
+input:checked + .slider{
+  background:#22c55e;
+}
+input:checked + .slider::before{
+  transform:translateX(22px);
+}
+
+.btn{
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+  background:#e50914;
+  color:#fff;
+  font-size:13px;
+  cursor:pointer;
+}
+
+.btn.gray{background:#333}
+.btn:hover{filter:brightness(1.1)}
+
+.logs{
+  margin-top:40px;
+}
+.logs h2{
+  margin-bottom:12px;
+}
+
+small{color:#aaa}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>CLENA <span>TV</span> · Admin</h1>
+  <button class="btn gray" onclick="logout()">Sair</button>
+</header>
+
+<div class="container">
+
+  <h2>Usuários</h2>
+
+  <table id="tabelaUsuarios">
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Sessão única</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="logs">
+    <h2>Histórico de logins</h2>
+
+    <table id="tabelaLogs">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>IP</th>
+          <th>Navegador</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+// 🔐 PROTEÇÃO BÁSICA (AJUSTE SE QUISER)
+const ADMIN_EMAILS = ["admin@clena.tv"];
+
+(async ()=>{
+  const email = localStorage.getItem("usuario_email");
+  if(!ADMIN_EMAILS.includes(email)){
+    alert("Acesso negado");
+    location.replace("login.html");
+    return;
+  }
+  carregarUsuarios();
+  carregarLogs();
+})();
+
+async function carregarUsuarios(){
+  const { data } = await sb
+    .from("usuarios")
+    .select("id,email,status,controle_sessao");
+
+  const tbody = document.querySelector("#tabelaUsuarios tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(u=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${u.email}</td>
+        <td>${u.status}</td>
+        <td>
+          <label class="switch">
+            <input type="checkbox"
+              ${u.controle_sessao ? "checked":""}
+              onchange="toggleSessao('${u.id}', this.checked)">
+            <span class="slider"></span>
+          </label>
+        </td>
+        <td>
+          <button class="btn"
+            onclick="derrubarSessao('${u.id}')">
+            Derrubar sessões
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function toggleSessao(userId, ativo){
+  await sb
+    .from("usuarios")
+    .update({ controle_sessao: ativo })
+    .eq("id", userId);
+}
+
+async function derrubarSessao(userId){
+  if(!confirm("Derrubar todas as sessões desse usuário?")) return;
+
+  await sb
+    .from("usuarios")
+    .update({ session_token: crypto.randomUUID() })
+    .eq("id", userId);
+
+  alert("Sessões derrubadas");
+}
+
+async function carregarLogs(){
+  const { data } = await sb
+    .from("login_logs")
+    .select("*")
+    .order("created_at", { ascending:false })
+    .limit(50);
+
+  const tbody = document.querySelector("#tabelaLogs tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(l=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${l.email}</td>
+        <td>${l.ip || "-"}</td>
+        <td><small>${l.user_agent || "-"}</small></td>
+        <td>${new Date(l.created_at).toLocaleString("pt-BR")}</td>
+      </tr>
+    `;
+  });
+}
+
+function logout(){
+  localStorage.clear();
+  location.replace("login.html");
+}
+</script>
+
+</body>
+</html>
