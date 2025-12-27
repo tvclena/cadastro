@@ -283,8 +283,17 @@ btnLogin.onclick = async ()=>{
     return;
   }
 
-  localStorage.setItem("usuario_email",data.email);
+ localStorage.setItem("usuario_email", data.email);
+
+const redirect = localStorage.getItem("redirect_after_login");
+
+if (redirect) {
+  localStorage.removeItem("redirect_after_login");
+  location.replace(redirect);
+} else {
   location.replace("index.html");
+}
+
 };
 
 /* CADASTRO */
