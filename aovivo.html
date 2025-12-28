@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Terror 24h • Ao Vivo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -11,6 +12,7 @@ html,body{
   margin:0;
   background:black;
   height:100%;
+  overflow:hidden;
 }
 video{
   width:100vw;
@@ -26,16 +28,21 @@ video{
   font-family:Inter,system-ui;
   font-size:18px;
   opacity:.85;
+  z-index:10;
 }
 </style>
 </head>
+
 <body>
 
 <div class="overlay">🔴 Terror 24h • AO VIVO</div>
 <video id="player" autoplay muted playsinline></video>
 
 <script>
-const supabase = window.supabase.createClient(
+/* ===================== */
+/* SUPABASE (NOME SEGURO) */
+/* ===================== */
+const db = window.supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
@@ -46,31 +53,36 @@ const player = document.getElementById("player");
 /* ===================== */
 /* TEMPO ATUAL EM MINUTOS */
 /* ===================== */
-function agoraEmMinutos(){
+function agoraMin(){
   const d = new Date();
   return d.getHours() * 60 + d.getMinutes();
 }
 
 /* ===================== */
-/* CARREGAR AO VIVO */
+/* AO VIVO */
 /* ===================== */
 async function carregarAoVivo(){
   const hoje = new Date().toISOString().split("T")[0];
-  const agora = agoraEmMinutos();
+  const agora = agoraMin();
 
-  const { data: lista } = await supabase
+  const { data, error } = await db
     .from("programacao")
     .select("*, filmes(*)")
     .eq("canal", CANAL)
     .eq("data", hoje)
     .order("inicio_minuto");
 
-  if(!lista || !lista.length){
-    console.warn("Sem programação");
+  if(error){
+    console.error("Erro Supabase:", error);
     return;
   }
 
-  const atual = lista.find(p =>
+  if(!data || !data.length){
+    console.warn("Sem programação hoje");
+    return;
+  }
+
+  const atual = data.find(p =>
     agora >= p.inicio_minuto &&
     agora < (p.inicio_minuto + p.duracao_minutos)
   );
@@ -81,26 +93,25 @@ async function carregarAoVivo(){
   }
 
   const segundos = (agora - atual.inicio_minuto) * 60;
-
-  iniciarVideo(atual.filmes.video_url, segundos, lista, atual);
+  tocar(atual, data, segundos);
 }
 
 /* ===================== */
-/* INICIAR PLAYER */
+/* PLAYER */
 /* ===================== */
-function iniciarVideo(url, start, lista, atual){
-  player.src = url;
+function tocar(item, lista, start){
+  player.src = item.filmes.video_url;
   player.currentTime = start;
   player.muted = true;
   player.play();
 
   player.onended = () => {
-    const idx = lista.findIndex(i => i.id === atual.id);
-    const proximo = lista[idx + 1];
-    if(proximo){
-      iniciarVideo(proximo.filmes.video_url, 0, lista, proximo);
+    const idx = lista.findIndex(i => i.id === item.id);
+    const prox = lista[idx + 1];
+    if(prox){
+      tocar(prox, lista, 0);
     } else {
-      setTimeout(carregarAoVivo, 5000);
+      setTimeout(carregarAoVivo, 3000);
     }
   };
 }
