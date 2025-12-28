@@ -236,32 +236,61 @@ function aplicarFiltro(){
     });
 }
 
-/* ADD CONTEUDO */
 async function addConteudo(f){
-  const data=document.getElementById("data").value;
+  const dataStr = document.getElementById("data").value;
+  const dataAtual = new Date(dataStr + "T00:00:00");
 
-  const {data:last}=await db.from("programacao")
+  const { data:last } = await db
+    .from("programacao")
     .select("*")
-    .eq("canal_id",canalSelecionado)
-    .eq("data",data)
-    .order("hora_fim",{ascending:false})
+    .eq("canal_id", canalSelecionado)
+    .eq("data", dataStr)
+    .order("hora_fim", { ascending: false })
     .limit(1);
 
-  const inicio = last?.[0] ? timeToMin(last[0].hora_fim) : 0;
-  const dur = f.duracao_minutos || 120;
+  let inicioMin = last?.[0]
+    ? timeToMin(last[0].hora_fim)
+    : 0;
 
-  await db.from("programacao").insert({
-    canal_id: canalSelecionado,
-    filme_id: f.id,
-    data,
-    hora_inicio: minToTime(inicio),
-    hora_fim: minToTime(inicio + dur),
-    duracao_minutos: dur
-  });
+  let dur = f.duracao_minutos || 120;
+  let restante = dur;
 
-  document.getElementById("modal").style.display="none";
+  // PARTE 1 – DIA ATUAL
+  if (inicioMin < 1440) {
+    const fimHoje = Math.min(1440, inicioMin + restante);
+
+    await db.from("programacao").insert({
+      canal_id: canalSelecionado,
+      filme_id: f.id,
+      data: dataStr,
+      hora_inicio: minToTime(inicioMin),
+      hora_fim: minToTime(fimHoje === 1440 ? 1439 : fimHoje),
+      duracao_minutos: fimHoje - inicioMin
+    });
+
+    restante -= (fimHoje - inicioMin);
+  }
+
+  // PARTE 2 – DIA SEGUINTE
+  if (restante > 0) {
+    const proximoDia = new Date(dataAtual);
+    proximoDia.setDate(proximoDia.getDate() + 1);
+    const dataNext = proximoDia.toISOString().split("T")[0];
+
+    await db.from("programacao").insert({
+      canal_id: canalSelecionado,
+      filme_id: f.id,
+      data: dataNext,
+      hora_inicio: "00:00:00",
+      hora_fim: minToTime(restante),
+      duracao_minutos: restante
+    });
+  }
+
+  document.getElementById("modal").style.display = "none";
   load();
 }
+
 
 /* EVENTS */
 document.getElementById("filtroNome").oninput=aplicarFiltro;
