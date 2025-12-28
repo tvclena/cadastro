@@ -112,23 +112,6 @@ button.danger{background:var(--danger)}
   color:var(--muted);
 }
 
-/* EPISÓDIOS */
-.episodio{
-  background:#0b1020;
-  border-radius:12px;
-  padding:8px;
-  margin-top:8px;
-  display:grid;
-  grid-template-columns:42px 1fr auto;
-  gap:6px;
-  align-items:center;
-}
-.episodio span{
-  text-align:center;
-  font-weight:700;
-  color:var(--muted);
-}
-
 /* MODAL */
 .modal{
   position:fixed;
@@ -169,11 +152,6 @@ button.danger{background:var(--danger)}
   overflow:auto;
 }
 
-.readonly{
-  opacity:.7;
-  pointer-events:none;
-}
-
 .kv{
   font-size:13px;
   margin:4px 0;
@@ -191,178 +169,13 @@ button.danger{background:var(--danger)}
 
 <body>
 
-<script>
-/* ===== SUPABASE ===== */
-const supabaseClient = supabase.createClient(
-  "https://dxkszikemntfusfyrzos.supabase.co",
-  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
-);
-
-/* ===== BUNNY CDN ===== */
-const BUNNY_STORAGE_ZONE="sessao99";
-const BUNNY_API_KEY="d498d56e-361b-4a1e-9edb9eb63e3b-2e6a-4c17";
-const BUNNY_STORAGE_HOST="https://br.storage.bunnycdn.com";
-const BUNNY_CDN_URL="https://sessao99.b-cdn.net";
-
-async function uploadCapa(file){
-  if(!file) return "";
-  const ext=file.name.split(".").pop();
-  const name=`${Date.now()}_${crypto.randomUUID()}.${ext}`;
-  const url=`${BUNNY_STORAGE_HOST}/${BUNNY_STORAGE_ZONE}/capas/${name}`;
-  const res=await fetch(url,{
-    method:"PUT",
-    headers:{AccessKey:BUNNY_API_KEY,"Content-Type":file.type},
-    body:file
-  });
-  if(!res.ok) throw new Error("Erro ao enviar capa");
-  return `${BUNNY_CDN_URL}/capas/${name}`;
-}
-
-const lista = document.getElementById("lista");
-let registros=[], atual=null, duracaoMin=null;
-
-function limparTitulo(t){
-  return t.replace(/download|torrent/ig,"").replace(/\s{2,}/g," ").trim();
-}
-
-function analisarTexto(){
-  const raw=rawInfo.value;
-  if(!raw.trim()) return alert("Cole o texto primeiro");
-
-  const get=r=>{const m=raw.match(r);return m?m[1].trim():""};
-
-  titulo.value=limparTitulo(raw.split("\n").find(l=>l.trim())||"");
-  descricao.value=get(/Sinopse:\s*([\s\S]+)/i);
-  categoria.value=get(/G[eê]neros:\s*(.+)/i);
-  classificacao_indicativa.value=get(/Classifica[cç][aã]o:\s*(.+)/i);
-  ano_lancamento.value=get(/Lan[cç]amento:\s*(\d{4})/i);
-  idioma.value=get(/Idioma:\s*(.+)/i);
-  audio.value=get(/(Dublado\s*\/\s*Dual Áudio|Dublado|Dual Áudio)/i);
-  nota_critica.value=get(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
-
-  const d=get(/Dura[cç][aã]o:\s*(\d+)/i);
-  duracaoMin=d?Number(d):null;
-
-  alert("Texto analisado. Complete capa e IDs.");
-}
-
-function toggleTipo(){
-  boxFilme.style.display=tipo.value==="filme"?"block":"none";
-  boxSerie.style.display=tipo.value==="serie"?"block":"none";
-  if(tipo.value==="serie"&&!epsNovo.children.length) addEpisodio();
-}
-
-function addEpisodio(){
-  const n=epsNovo.children.length+1;
-  const d=document.createElement("div");
-  d.className="episodio";
-  d.innerHTML=`
-    <span>${n}</span>
-    <input class="vid" placeholder="ID do vídeo">
-    <button class="danger" onclick="this.parentNode.remove()">🗑</button>
-  `;
-  epsNovo.appendChild(d);
-}
-
-async function salvarNovo(){
-  let capa="";
-  if(capaFile.files.length) capa=await uploadCapa(capaFile.files[0]);
-
-  const base={
-    titulo:titulo.value,
-    descricao:descricao.value,
-    categoria:categoria.value,
-    classificacao_indicativa:classificacao_indicativa.value,
-    capa_url:capa,
-    tipo:tipo.value,
-    ano_lancamento:Number(ano_lancamento.value)||null,
-    idioma:idioma.value,
-    audio:audio.value,
-    nota_critica:Number(nota_critica.value)||null,
-    duracao_minutos:duracaoMin,
-    raw_info:rawInfo.value,
-    ativo:true
-  };
-
-  if(tipo.value==="filme"){
-    await supabaseClient.from("filmes").insert({...base,video_url:videoFilme.value});
-    return carregar();
-  }
-
-  const rows=[...epsNovo.children].map((e,i)=>({
-    ...base,
-    serie_nome:titulo.value,
-    temporada:Number(temporadaNova.value),
-    episodio:i+1,
-    video_url:e.querySelector(".vid").value
-  }));
-
-  await supabaseClient.from("filmes").insert(rows);
-  carregar();
-}
-
-async function carregar(){
-  const { data } = await supabaseClient
-    .from("filmes")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  registros=data||[];
-  lista.innerHTML="";
-
-  registros.forEach(r=>{
-    const d=document.createElement("div");
-    d.className="card";
-    d.ondblclick=()=>abrirModal(r);
-    d.innerHTML=`
-      <img src="${r.capa_url||''}">
-      <div class="box">
-        <b>${r.titulo}</b>
-        <span class="badge">${r.tipo}</span>
-      </div>
-    `;
-    lista.appendChild(d);
-  });
-}
-
-/* ===== MODAL ===== */
-function abrirModal(r){
-  atual=r;
-  modal.style.display="flex";
-
-  mCapa.src=r.capa_url||"";
-  mTitulo.value=r.titulo;
-  mDescricao.value=r.descricao||"";
-  mGenero.value=r.categoria||"";
-  mClassificacao.value=r.classificacao_indicativa||"";
-  mAno.textContent=r.ano_lancamento||"-";
-  mIdioma.textContent=r.idioma||"-";
-  mAudio.textContent=r.audio||"-";
-  mNota.textContent=r.nota_critica||"-";
-  mDuracao.textContent=r.duracao_minutos?`${r.duracao_minutos} min`:"-";
-  mRaw.textContent=r.raw_info||"-";
-
-  if(r.tipo==="filme"){
-    mVideo.textContent=r.video_url||"-";
-    mSerieBox.style.display="none";
-  }else{
-    mVideo.textContent="-";
-    mSerieBox.style.display="block";
-  }
-}
-
-function fecharModal(){modal.style.display="none"}
-
-window.addEventListener("DOMContentLoaded",carregar);
-</script>
-
 <div class="wrapper">
 
 <!-- CADASTRO -->
 <div class="panel">
   <h3>Novo Conteúdo</h3>
 
-  <textarea id="rawInfo" placeholder="Cole todas as informações"></textarea>
+  <textarea id="rawInfo" placeholder="Cole todas as informações do filme"></textarea>
   <button onclick="analisarTexto()">Analisar texto</button>
 
   <input id="titulo" placeholder="Título">
@@ -378,20 +191,12 @@ window.addEventListener("DOMContentLoaded",carregar);
   <label>Capa</label>
   <input type="file" id="capaFile" accept="image/*">
 
-  <select id="tipo" onchange="toggleTipo()">
+  <select id="tipo">
     <option value="filme">Filme</option>
     <option value="serie">Série</option>
   </select>
 
-  <div id="boxFilme">
-    <input id="videoFilme" placeholder="ID do vídeo">
-  </div>
-
-  <div id="boxSerie" style="display:none">
-    <input type="number" id="temporadaNova" value="1" min="1">
-    <div id="epsNovo"></div>
-    <button onclick="addEpisodio()">➕ Episódio</button>
-  </div>
+  <input id="videoFilme" placeholder="ID do vídeo">
 
   <button onclick="salvarNovo()">Salvar</button>
 </div>
@@ -406,21 +211,20 @@ window.addEventListener("DOMContentLoaded",carregar);
 <!-- MODAL -->
 <div id="modal" class="modal" onclick="fecharModal()">
   <div class="modal-box" onclick="event.stopPropagation()">
-
     <div class="modal-header">
       <img id="mCapa">
       <div>
-        <input id="mTitulo">
-        <span class="badge">Visualização</span>
+        <h3 id="mTitulo"></h3>
+        <span class="badge" id="mTipo"></span>
       </div>
     </div>
 
     <div class="modal-body">
-      <textarea id="mDescricao"></textarea>
+      <p id="mDescricao"></p>
 
       <h4>Informações</h4>
-      <div class="kv"><b>Gêneros:</b> <input id="mGenero"></div>
-      <div class="kv"><b>Classificação:</b> <input id="mClassificacao"></div>
+      <div class="kv"><b>Gêneros:</b> <span id="mGenero"></span></div>
+      <div class="kv"><b>Classificação:</b> <span id="mClassificacao"></span></div>
       <div class="kv"><b>Ano:</b> <span id="mAno"></span></div>
       <div class="kv"><b>Idioma:</b> <span id="mIdioma"></span></div>
       <div class="kv"><b>Áudio:</b> <span id="mAudio"></span></div>
@@ -430,18 +234,115 @@ window.addEventListener("DOMContentLoaded",carregar);
 
       <h4>Texto bruto</h4>
       <pre id="mRaw" style="white-space:pre-wrap;font-size:12px;color:var(--muted)"></pre>
-
-      <div id="mSerieBox" style="display:none">
-        <p class="muted">Episódios não editáveis nesta tela.</p>
-      </div>
     </div>
 
     <div class="modal-actions">
       <button class="secondary" onclick="fecharModal()">Fechar</button>
     </div>
-
   </div>
 </div>
+
+<script>
+/* ===== SUPABASE ===== */
+const supabaseClient = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+const lista = document.getElementById("lista");
+let registros = [], atual = null;
+
+function limparTitulo(t){
+  return t.replace(/download|torrent/ig,"").replace(/\s{2,}/g," ").trim();
+}
+
+function analisarTexto(){
+  const raw = rawInfo.value;
+  if(!raw.trim()) return;
+
+  const get = r => (raw.match(r)||[])[1] || "";
+
+  titulo.value = limparTitulo(raw.split("\n")[0]);
+  descricao.value = get(/Sinopse:\s*([\s\S]+)/i);
+  categoria.value = get(/G[eê]neros:\s*(.+)/i);
+  classificacao_indicativa.value = get(/Classifica[cç][aã]o:\s*(.+)/i);
+  ano_lancamento.value = get(/Lan[cç]amento:\s*(\d{4})/i);
+  idioma.value = get(/Idioma:\s*(.+)/i);
+  audio.value = get(/Áudio:\s*(.+)/i);
+  nota_critica.value = get(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
+}
+
+async function salvarNovo(){
+  const { error } = await supabaseClient.from("filmes").insert({
+    titulo: titulo.value,
+    descricao: descricao.value,
+    categoria: categoria.value,
+    classificacao_indicativa: classificacao_indicativa.value,
+    ano_lancamento: Number(ano_lancamento.value) || null,
+    idioma: idioma.value,
+    audio: audio.value,
+    nota_critica: Number(nota_critica.value) || null,
+    tipo: tipo.value,
+    video_url: videoFilme.value,
+    raw_info: rawInfo.value,
+    ativo: true
+  });
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+  carregar();
+}
+
+async function carregar(){
+  const { data } = await supabaseClient
+    .from("filmes")
+    .select("*")
+    .order("created_at",{ascending:false});
+
+  registros = data || [];
+  lista.innerHTML = "";
+
+  registros.forEach(r=>{
+    const d = document.createElement("div");
+    d.className = "card";
+    d.ondblclick = () => abrirModal(r);
+    d.innerHTML = `
+      <img src="${r.capa_url || ''}">
+      <div class="box">
+        <b>${r.titulo}</b>
+        <span class="badge">${r.tipo}</span>
+      </div>
+    `;
+    lista.appendChild(d);
+  });
+}
+
+function abrirModal(r){
+  atual = r;
+  modal.style.display = "flex";
+  mCapa.src = r.capa_url || "";
+  mTitulo.textContent = r.titulo;
+  mTipo.textContent = r.tipo;
+  mDescricao.textContent = r.descricao || "";
+  mGenero.textContent = r.categoria || "-";
+  mClassificacao.textContent = r.classificacao_indicativa || "-";
+  mAno.textContent = r.ano_lancamento || "-";
+  mIdioma.textContent = r.idioma || "-";
+  mAudio.textContent = r.audio || "-";
+  mNota.textContent = r.nota_critica || "-";
+  mDuracao.textContent = r.duracao_minutos ? r.duracao_minutos+" min" : "-";
+  mVideo.textContent = r.video_url || "-";
+  mRaw.textContent = r.raw_info || "-";
+}
+
+function fecharModal(){
+  modal.style.display = "none";
+}
+
+document.addEventListener("DOMContentLoaded", carregar);
+</script>
 
 </body>
 </html>
