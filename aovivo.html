@@ -1,186 +1,97 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<title>CLENA TV • AO VIVO</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<!-- HLS -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<title>Sessão • AO VIVO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: black;
-  overflow: hidden;
-  font-family: Arial, Helvetica, sans-serif;
+html,body{
+  margin:0;
+  background:#000;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  font-family:Inter,Arial,sans-serif;
 }
-
-#player {
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  background: black;
+#live{
+  position:absolute;
+  top:16px;
+  left:16px;
+  z-index:10;
+  background:rgba(0,0,0,.6);
+  color:#fff;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:14px;
 }
-
-#overlay {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #fff;
-}
-
-#dot {
-  width: 10px;
-  height: 10px;
-  background: red;
-  border-radius: 50%;
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  50% { opacity: 0.3; }
-}
-
-#info {
-  position: fixed;
-  bottom: 16px;
-  left: 16px;
-  z-index: 20;
-  color: #fff;
-  font-size: 14px;
-  opacity: .9;
+iframe{
+  width:100%;
+  height:100%;
+  border:0;
 }
 </style>
 </head>
 
 <body>
 
-<!-- INDICADOR AO VIVO -->
-<div id="overlay">
-  <div id="dot"></div>
-  <strong>AO VIVO • Terror 24h</strong>
-</div>
+<div id="live">🔴 AO VIVO • Terror 24h</div>
+<iframe id="player" allow="autoplay; fullscreen"></iframe>
 
-<!-- INFO DO FILME -->
-<div id="info"></div>
-
-<!-- PLAYER -->
-<video id="player" autoplay muted playsinline></video>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* =====================================================
-   CONFIGURAÇÃO SUPABASE (UMA ÚNICA VEZ)
-===================================================== */
-const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
+/* ================= CONFIG ================= */
+const LIBRARY_ID = "569072";
+const CANAL = "Terror 24h";
 
-const supabase = supabaseJs.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
+const sb = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-/* =====================================================
-   PLAYER
-===================================================== */
-const video = document.getElementById("player");
-const info = document.getElementById("info");
-let hlsInstance = null;
-let videoAtual = null;
+const iframe = document.getElementById("player");
 
-/* =====================================================
-   FUNÇÕES AUXILIARES
-===================================================== */
-function minutosAgora() {
+/* ================= HELPERS ================= */
+function agoraMin(){
   const d = new Date();
   return d.getHours() * 60 + d.getMinutes();
 }
-
-function dataHoje() {
-  return new Date().toISOString().slice(0, 10);
+function hoje(){
+  return new Date().toISOString().split("T")[0];
 }
 
-/* =====================================================
-   INICIAR PLAYER HLS
-===================================================== */
-function tocarVideo(url, titulo) {
-  if (videoAtual === url) return;
-  videoAtual = url;
+/* ================= AO VIVO ================= */
+async function carregarAoVivo(){
+  const min = agoraMin();
 
-  info.innerText = titulo || "";
-
-  if (hlsInstance) {
-    hlsInstance.destroy();
-    hlsInstance = null;
-  }
-
-  if (Hls.isSupported()) {
-    hlsInstance = new Hls({
-      lowLatencyMode: true,
-      backBufferLength: 30
-    });
-    hlsInstance.loadSource(url);
-    hlsInstance.attachMedia(video);
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      video.play().catch(()=>{});
-    });
-  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-    video.src = url;
-    video.play().catch(()=>{});
-  }
-}
-
-/* =====================================================
-   BUSCAR PROGRAMAÇÃO AO VIVO
-===================================================== */
-async function atualizarProgramacao() {
-  const agora = minutosAgora();
-
-  const { data, error } = await supabase
+  const { data } = await sb
     .from("programacao")
-    .select(`
-      inicio_minuto,
-      duracao_minutos,
-      filmes (
-        titulo,
-        video_url
-      )
-    `)
-    .eq("canal", "Terror 24h")
-    .eq("data", dataHoje());
+    .select("inicio_minuto,duracao_minutos,filmes(video_url,titulo)")
+    .eq("canal", CANAL)
+    .eq("data", hoje())
+    .order("inicio_minuto");
 
-  if (error || !data) {
-    console.error("Erro Supabase:", error);
-    return;
-  }
+  if(!data || !data.length) return;
 
   const atual = data.find(p =>
-    agora >= p.inicio_minuto &&
-    agora < p.inicio_minuto + p.duracao_minutos
+    min >= p.inicio_minuto &&
+    min < p.inicio_minuto + p.duracao_minutos
   );
 
-  if (!atual || !atual.filmes || !atual.filmes.video_url) return;
+  if(!atual) return;
 
-  tocarVideo(atual.filmes.video_url, atual.filmes.titulo);
+  const src =
+    `https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${atual.filmes.video_url}?autoplay=true`;
+
+  if(iframe.src !== src){
+    iframe.src = src;
+  }
+
+  const restante = (atual.inicio_minuto + atual.duracao_minutos - min) * 60000;
+  setTimeout(carregarAoVivo, restante + 1000);
 }
 
-/* =====================================================
-   LOOP AO VIVO
-===================================================== */
-atualizarProgramacao();
-setInterval(atualizarProgramacao, 30000); // verifica a cada 30s
+carregarAoVivo();
 </script>
 
 </body>
