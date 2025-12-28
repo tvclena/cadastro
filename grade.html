@@ -4,49 +4,193 @@
 <meta charset="UTF-8">
 <title>📺 EPG Profissional</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root{
-  --bg:#070a11;
-  --panel:#0e1422;
-  --line:#1f2a3d;
-  --card:#1c2436;
-  --primary:#2bbcff;
-  --text:#fff;
+  --bg:#070b14;
+  --panel:#0e1627;
+  --line:#1e2a40;
+  --block:#2bbcff;
+  --text:#ffffff;
   --muted:#9aa4b2;
 }
 *{box-sizing:border-box;font-family:Inter,system-ui}
-body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#fff;overflow:hidden}
-.top{height:64px;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid var(--line)}
-.app{display:grid;grid-template-columns:220px 1fr;height:calc(100vh - 64px)}
-.canais{background:var(--panel);border-right:1px solid var(--line)}
-.canal{height:88px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--line);cursor:pointer}
-.canal.active{background:#16203a;box-shadow:inset 4px 0 0 var(--primary)}
-.grade{overflow:auto}
-.horas{display:flex;position:sticky;top:0;background:var(--panel)}
-.hora{min-width:160px;text-align:center;padding:10px 0;border-left:1px solid var(--line);color:var(--muted)}
-.linha{position:relative;height:88px;border-bottom:1px solid var(--line)}
-.bloco{
-  position:absolute;top:12px;height:64px;
-  background:linear-gradient(135deg,#36c7ff,#1aa3e8);
-  border-radius:12px;padding:6px;font-size:12px;color:#00131d
+body{
+  margin:0;
+  background:linear-gradient(180deg,#0b1222,#070b14);
+  color:var(--text);
+  overflow:hidden;
+}
+
+/* TOPO */
+.topbar{
+  height:64px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:0 24px;
+  border-bottom:1px solid var(--line);
+}
+.topbar input{
+  background:#0f1a2e;
+  color:#fff;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+}
+
+/* LAYOUT */
+.wrapper{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  height:calc(100vh - 64px);
+}
+
+/* CANAIS */
+.channels{
+  background:var(--panel);
+  border-right:1px solid var(--line);
+}
+.channel{
+  height:88px;
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+  font-weight:600;
+}
+.channel.active{
+  background:#162343;
+}
+
+/* GRADE */
+.grid{
+  overflow:auto;
+}
+.time-header{
+  display:flex;
+  position:sticky;
+  top:0;
+  background:var(--panel);
+  z-index:5;
+}
+.time{
+  min-width:120px;
+  text-align:center;
+  padding:10px 0;
+  border-left:1px solid var(--line);
+  font-size:12px;
+  color:var(--muted);
+}
+.row{
+  position:relative;
+  height:88px;
+  border-bottom:1px solid var(--line);
+}
+
+/* BLOCO */
+.block{
+  position:absolute;
+  top:10px;
+  height:68px;
+  background:var(--block);
+  border-radius:10px;
+  padding:6px;
+  color:#000;
+  display:flex;
+  gap:6px;
+  font-size:11px;
+}
+.block img{
+  width:36px;
+  height:52px;
+  border-radius:6px;
+  object-fit:cover;
+}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:50;
+}
+.modal-box{
+  width:760px;
+  max-height:80vh;
+  background:#0e1627;
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+}
+.modal-header{
+  display:flex;
+  gap:8px;
+  margin-bottom:12px;
+}
+.modal-header input,
+.modal-header select{
+  flex:1;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:#121f3a;
+  color:#fff;
+}
+.modal-list{
+  overflow-y:auto;
+}
+.modal-item{
+  display:flex;
+  gap:12px;
+  background:#121f3a;
+  padding:10px;
+  border-radius:12px;
+  margin-bottom:10px;
+  cursor:pointer;
+}
+.modal-item img{
+  width:60px;
+  height:90px;
+  border-radius:8px;
+  object-fit:cover;
+}
+.modal-item small{
+  color:var(--muted);
 }
 </style>
 </head>
 
 <body>
 
-<div class="top">
+<div class="topbar">
   <b>📺 EPG Profissional</b>
   <input type="date" id="data">
 </div>
 
-<div class="app">
-  <div class="canais" id="canais"></div>
-  <div class="grade">
-    <div class="horas" id="horas"></div>
-    <div id="linhas"></div>
+<div class="wrapper">
+  <div class="channels" id="channels"></div>
+  <div class="grid">
+    <div class="time-header" id="timeHeader"></div>
+    <div id="rows"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <input id="busca" placeholder="Buscar conteúdo">
+      <select id="categoria"></select>
+    </div>
+    <div class="modal-list" id="lista"></div>
   </div>
 </div>
 
@@ -57,110 +201,142 @@ const supabase = window.supabase.createClient(
 );
 
 const DAY = 1440;
-let canalAtual = null;
+let canalAtivo = null;
+let filmes = [];
 
-/* HORAS */
-const horas=document.getElementById("horas");
-for(let h=0;h<24;h++){
-  horas.innerHTML+=`<div class="hora">${String(h).padStart(2,'0')}:00</div>`;
+/* UTIL */
+const minToPx = min => (min / DAY) * 100;
+
+/* HEADER HORAS */
+const th = document.getElementById("timeHeader");
+for(let h=0; h<24; h++){
+  th.innerHTML += `<div class="time">${String(h).padStart(2,'0')}:00</div>`;
 }
 
 /* LOAD */
 async function load(){
-  const data=document.getElementById("data").value;
+  document.getElementById("data").value ||= new Date().toISOString().split("T")[0];
 
-  const {data:canais}=await supabase
-    .from("canais")
-    .select("*")
-    .eq("ativo",true)
-    .order("ordem");
-
-  const canaisEl=document.getElementById("canais");
-  const linhasEl=document.getElementById("linhas");
-  canaisEl.innerHTML=""; linhasEl.innerHTML="";
+  const canais = ["Filmes 24h","Terror 24h","Ação Total","Clássicos","Sessão Família"];
+  const ch = document.getElementById("channels");
+  const rows = document.getElementById("rows");
+  ch.innerHTML=""; rows.innerHTML="";
 
   canais.forEach(c=>{
-    const div=document.createElement("div");
-    div.className="canal";
-    div.innerText=c.nome;
-    div.onclick=()=>selecionarCanal(c.id,div);
-    canaisEl.appendChild(div);
-    linhasEl.innerHTML+=`<div class="linha" data-canal="${c.id}"></div>`;
+    const el=document.createElement("div");
+    el.className="channel";
+    el.textContent=c;
+    el.onclick=()=>selectCanal(c,el);
+    el.ondblclick=openModal;
+    ch.appendChild(el);
+    rows.innerHTML+=`<div class="row" data-canal="${c}"></div>`;
   });
 
-  renderProgramacao(data);
+  const r = await supabase.from("filmes").select("*").eq("ativo",true);
+  filmes = r.data || [];
+  renderCategorias();
+  renderProgramacao();
 }
 
-function selecionarCanal(id,el){
-  canalAtual=id;
-  document.querySelectorAll(".canal").forEach(c=>c.classList.remove("active"));
+function selectCanal(c,el){
+  canalAtivo=c;
+  document.querySelectorAll(".channel").forEach(x=>x.classList.remove("active"));
   el.classList.add("active");
 }
 
-/* PROGRAMAÇÃO */
-async function renderProgramacao(data){
-  const {data:prog}=await supabase
-    .from("programacao")
-    .select("*,filmes(*)")
-    .eq("data",data);
+async function renderProgramacao(){
+  const data = document.getElementById("data").value;
+  const r = await supabase.from("programacao").select("*,filmes(*)").eq("data",data);
 
-  document.querySelectorAll(".linha").forEach(linha=>{
-    linha.innerHTML="";
-    const canal=linha.dataset.canal;
-
-    prog.filter(p=>p.canal_id===canal).forEach(p=>{
+  document.querySelectorAll(".row").forEach(row=>{
+    row.innerHTML="";
+    r.data?.filter(p=>p.canal===row.dataset.canal).forEach(p=>{
       const b=document.createElement("div");
-      b.className="bloco";
-      b.style.left=(p.inicio_minuto/DAY)*100+"%";
-      b.style.width=(p.duracao_minutos/DAY)*100+"%";
+      b.className="block";
+      b.style.left=minToPx(p.inicio_minuto)+"%";
+      b.style.width=minToPx(p.duracao_minutos)+"%";
       b.innerHTML=`
-        <b>${p.filmes.titulo}</b>
-        <small>${p.duracao_minutos} min</small>
-      `;
-      linha.appendChild(b);
+        <img src="${p.filmes?.capa_url}">
+        <div>
+          <b>${p.filmes?.titulo}</b><br>
+          <small>${p.duracao_minutos} min</small>
+        </div>`;
+      row.appendChild(b);
     });
   });
 }
 
-/* ADD TESTE (DUPLO CLIQUE NA TELA) */
-document.body.ondblclick=async ()=>{
-  if(!canalAtual) return alert("Selecione um canal");
+/* MODAL */
+function openModal(){
+  if(!canalAtivo) return alert("Selecione um canal");
+  document.getElementById("modal").style.display="flex";
+  aplicarFiltro();
+}
+document.getElementById("modal").onclick=e=>{
+  if(e.target.id==="modal") e.target.style.display="none";
+};
 
+function renderCategorias(){
+  const sel=document.getElementById("categoria");
+  const cats=[...new Set(filmes.map(f=>f.categoria).filter(Boolean))];
+  sel.innerHTML='<option value="">Todas categorias</option>';
+  cats.forEach(c=>sel.innerHTML+=`<option>${c}</option>`);
+}
+
+function aplicarFiltro(){
+  const nome=document.getElementById("busca").value.toLowerCase();
+  const cat=document.getElementById("categoria").value;
+  const list=document.getElementById("lista");
+  list.innerHTML="";
+
+  filmes.filter(f=>
+    (!nome || f.titulo.toLowerCase().includes(nome)) &&
+    (!cat || f.categoria===cat)
+  ).forEach(f=>{
+    const d=document.createElement("div");
+    d.className="modal-item";
+    d.ondblclick=()=>addConteudo(f);
+    d.innerHTML=`
+      <img src="${f.capa_url}">
+      <div>
+        <b>${f.titulo}</b><br>
+        <small>${f.categoria} • ${f.duracao_minutos||120} min</small>
+      </div>`;
+    list.appendChild(d);
+  });
+}
+
+async function addConteudo(f){
   const data=document.getElementById("data").value;
 
-  const {data:last}=await supabase
+  const r = await supabase
     .from("programacao")
-    .select("*")
-    .eq("canal_id",canalAtual)
+    .select("inicio_minuto,duracao_minutos")
+    .eq("canal",canalAtivo)
     .eq("data",data)
     .order("inicio_minuto",{ascending:false})
     .limit(1);
 
-  const inicio=last?.[0]
-    ? last[0].inicio_minuto+last[0].duracao_minutos
+  const inicio = r.data?.[0]
+    ? r.data[0].inicio_minuto + r.data[0].duracao_minutos
     : 0;
 
-  const {data:filme}=await supabase
-    .from("filmes")
-    .select("*")
-    .limit(1)
-    .single();
-
   await supabase.from("programacao").insert({
-    canal_id:canalAtual,
-    filme_id:filme.id,
-    data:data,
-    inicio_minuto:inicio,
-    duracao_minutos:filme.duracao_minutos||120
+    canal: canalAtivo,
+    filme_id: f.id,
+    data,
+    inicio_minuto: inicio,
+    duracao_minutos: f.duracao_minutos || 120
   });
 
-  load();
-};
+  document.getElementById("modal").style.display="none";
+  renderProgramacao();
+}
 
-/* INIT */
-document.getElementById("data").value=new Date().toISOString().split("T")[0];
+document.getElementById("busca").oninput=aplicarFiltro;
+document.getElementById("categoria").onchange=aplicarFiltro;
+
 load();
 </script>
-
 </body>
 </html>
