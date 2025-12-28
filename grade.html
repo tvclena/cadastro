@@ -5,6 +5,7 @@
 <title>📺 EPG Profissional</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- SUPABASE CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -20,7 +21,7 @@
 body{
   margin:0;
   background:linear-gradient(180deg,#0b1222,#070b14);
-  color:var(--text);
+  color:#fff;
   overflow:hidden;
 }
 
@@ -195,7 +196,8 @@ body{
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+/* ✅ CLIENTE SUPABASE — UMA ÚNICA VEZ */
+const db = supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
@@ -204,8 +206,13 @@ const DAY = 1440;
 let canalAtivo = null;
 let filmes = [];
 
-/* UTIL */
-const minToPx = min => (min / DAY) * 100;
+const canais = [
+  "Filmes 24h",
+  "Terror 24h",
+  "Ação Total",
+  "Clássicos",
+  "Sessão Família"
+];
 
 /* HEADER HORAS */
 const th = document.getElementById("timeHeader");
@@ -213,11 +220,12 @@ for(let h=0; h<24; h++){
   th.innerHTML += `<div class="time">${String(h).padStart(2,'0')}:00</div>`;
 }
 
+function minToPercent(min){ return (min / DAY) * 100; }
+
 /* LOAD */
 async function load(){
   document.getElementById("data").value ||= new Date().toISOString().split("T")[0];
 
-  const canais = ["Filmes 24h","Terror 24h","Ação Total","Clássicos","Sessão Família"];
   const ch = document.getElementById("channels");
   const rows = document.getElementById("rows");
   ch.innerHTML=""; rows.innerHTML="";
@@ -232,7 +240,7 @@ async function load(){
     rows.innerHTML+=`<div class="row" data-canal="${c}"></div>`;
   });
 
-  const r = await supabase.from("filmes").select("*").eq("ativo",true);
+  const r = await db.from("filmes").select("*").eq("ativo",true);
   filmes = r.data || [];
   renderCategorias();
   renderProgramacao();
@@ -246,15 +254,15 @@ function selectCanal(c,el){
 
 async function renderProgramacao(){
   const data = document.getElementById("data").value;
-  const r = await supabase.from("programacao").select("*,filmes(*)").eq("data",data);
+  const r = await db.from("programacao").select("*,filmes(*)").eq("data",data);
 
   document.querySelectorAll(".row").forEach(row=>{
     row.innerHTML="";
     r.data?.filter(p=>p.canal===row.dataset.canal).forEach(p=>{
       const b=document.createElement("div");
       b.className="block";
-      b.style.left=minToPx(p.inicio_minuto)+"%";
-      b.style.width=minToPx(p.duracao_minutos)+"%";
+      b.style.left=minToPercent(p.inicio_minuto)+"%";
+      b.style.width=minToPercent(p.duracao_minutos)+"%";
       b.innerHTML=`
         <img src="${p.filmes?.capa_url}">
         <div>
@@ -309,7 +317,7 @@ function aplicarFiltro(){
 async function addConteudo(f){
   const data=document.getElementById("data").value;
 
-  const r = await supabase
+  const r = await db
     .from("programacao")
     .select("inicio_minuto,duracao_minutos")
     .eq("canal",canalAtivo)
@@ -321,7 +329,7 @@ async function addConteudo(f){
     ? r.data[0].inicio_minuto + r.data[0].duracao_minutos
     : 0;
 
-  await supabase.from("programacao").insert({
+  await db.from("programacao").insert({
     canal: canalAtivo,
     filme_id: f.id,
     data,
