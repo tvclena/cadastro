@@ -2,22 +2,20 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>📺 EPG Profissional – Grade & Publicidade</title>
+<title>📺 EPG – Grade Linear</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root{
-  --bg:#070a11;
-  --panel:#0e1422;
-  --card:#1c2436;
-  --hover:#2a3550;
-  --content:#00c6ff;
-  --content2:#0072ff;
+  --bg:#0b0f17;
+  --panel:#0f1420;
+  --card:#1c2230;
+  --line:#222a3a;
+  --content:#2bbcff;
   --ad:#ffb300;
-  --ad2:#ff6f00;
-  --text:#ffffff;
+  --text:#fff;
   --muted:#9aa4b2;
 }
 
@@ -25,286 +23,161 @@
 
 body{
   margin:0;
-  background:radial-gradient(circle at top,#0f1830,#070a11);
+  background:radial-gradient(circle at top,#101a30,#070a11);
   color:var(--text);
   overflow:hidden;
 }
 
 /* TOP */
 .topbar{
-  height:68px;
+  height:64px;
   display:flex;
   align-items:center;
-  gap:18px;
+  gap:16px;
   padding:0 24px;
-  border-bottom:1px solid #1c2436;
+  border-bottom:1px solid var(--line);
 }
-
-.topbar b{font-size:18px}
 
 /* LAYOUT */
-.layout{
+.wrapper{
   display:grid;
-  grid-template-columns:340px 1fr;
-  height:calc(100vh - 68px);
+  grid-template-columns:220px 1fr;
+  height:calc(100vh - 64px);
 }
 
-/* LEFT */
-.library{
+/* LEFT – CANAIS */
+.channels{
   background:var(--panel);
-  border-right:1px solid #1c2436;
-  display:flex;
-  flex-direction:column;
-}
-
-.library header{
-  padding:16px;
-  border-bottom:1px solid #1c2436;
-}
-
-.library input, select{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:none;
-  background:var(--card);
-  color:var(--text);
-  margin-bottom:8px;
-}
-
-/* LIST */
-.items{
+  border-right:1px solid var(--line);
   overflow-y:auto;
-  padding:16px;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
 }
 
-.item{
+.channel{
+  height:90px;
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  background:var(--card);
-  padding:12px;
-  border-radius:14px;
-  cursor:grab;
-  transition:.2s;
+  padding:0 16px;
+  border-bottom:1px solid var(--line);
+  font-weight:600;
 }
 
-.item:hover{background:var(--hover)}
-
-.item small{color:var(--muted)}
-
-/* GRADE */
-.grade{
-  padding:18px;
+/* RIGHT – GRID */
+.grid{
   overflow:auto;
-}
-
-.timeline{
   position:relative;
-  height:160px;
-  background:linear-gradient(180deg,#0e1422,#090d18);
-  border-radius:18px;
-  border:1px solid #1c2436;
 }
 
-.hour{
-  position:absolute;
+/* TIME HEADER */
+.time-header{
+  display:flex;
+  position:sticky;
   top:0;
-  bottom:0;
-  width:1px;
-  background:#1c2436;
+  z-index:5;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
 }
 
-.hour-label{
-  position:absolute;
-  top:10px;
-  font-size:12px;
+.time{
+  min-width:160px;
+  text-align:center;
+  padding:12px 0;
+  font-size:13px;
   color:var(--muted);
-  transform:translateX(-50%);
+  border-left:1px solid var(--line);
 }
 
-.drop-area{
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:18px;
-  height:100px;
+/* ROW */
+.row{
+  position:relative;
+  height:90px;
+  border-bottom:1px solid var(--line);
 }
 
-/* BLOCO */
+/* BLOCK */
 .block{
   position:absolute;
-  top:0;
-  height:90px;
-  border-radius:16px;
-  padding:12px;
-  color:#fff;
-  box-shadow:0 10px 30px rgba(0,0,0,.45);
-  transition:.2s;
+  top:12px;
+  height:66px;
+  border-radius:12px;
+  padding:8px 10px;
+  color:#000;
+  font-size:13px;
+  overflow:hidden;
 }
 
-.block:hover{transform:scale(1.03);z-index:10}
+.block.conteudo{background:var(--content)}
+.block.publicidade{background:var(--ad)}
 
-.block.conteudo{
-  background:linear-gradient(135deg,var(--content),var(--content2));
-}
-
-.block.publicidade{
-  background:linear-gradient(135deg,var(--ad),var(--ad2));
-}
-
-.block b{font-size:14px}
-.block small{font-size:11px;opacity:.9}
+.block b{display:block;font-size:14px}
+.block small{font-size:11px}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-  <b>📺 EPG Profissional</b>
-  <select id="canalSelect"></select>
+  <b>📺 Grade Linear</b>
   <input type="date" id="data">
 </div>
 
-<div class="layout">
+<div class="wrapper">
+  <div class="channels" id="channels"></div>
 
-  <!-- BIBLIOTECA -->
-  <div class="library">
-    <header>
-      <input id="search" placeholder="Buscar conteúdo">
-      <select id="tipoItem">
-        <option value="conteudo">🎬 Conteúdo</option>
-        <option value="publicidade">📢 Publicidade</option>
-      </select>
-    </header>
-    <div class="items" id="items"></div>
+  <div class="grid">
+    <div class="time-header" id="timeHeader"></div>
+    <div id="rows"></div>
   </div>
-
-  <!-- GRADE -->
-  <div class="grade">
-    <div class="timeline" id="timeline">
-      <div class="drop-area" id="dropArea"></div>
-    </div>
-  </div>
-
 </div>
 
 <script>
-/* SUPABASE */
 const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const DAY_MINUTES=1440;
-const timeline=document.getElementById("timeline");
-const dropArea=document.getElementById("dropArea");
+const DAY = 1440;
 
-/* TIMELINE */
+/* TIME HEADER */
+const timeHeader=document.getElementById("timeHeader");
 for(let h=0;h<24;h++){
-  const l=(h*60/DAY_MINUTES)*100;
-  timeline.insertAdjacentHTML("beforeend",
-    `<div class="hour" style="left:${l}%"></div>
-     <div class="hour-label" style="left:${l}%">${String(h).padStart(2,"0")}:00</div>`
-  );
+  timeHeader.innerHTML+=`<div class="time">${String(h).padStart(2,"0")}:00</div>`;
 }
 
-/* LOAD CANAIS */
-async function loadCanais(){
-  const {data}=await db.from("canais").select("*").order("ordem");
-  const s=document.getElementById("canalSelect");
-  s.innerHTML="";
-  data.forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.nome}</option>`);
-}
+/* LOAD CANAIS + GRADE */
+async function load(){
+  const {data:canais}=await db.from("canais").select("*").order("ordem");
+  const ch=document.getElementById("channels");
+  const rows=document.getElementById("rows");
+  ch.innerHTML=""; rows.innerHTML="";
 
-/* LOAD ITENS */
-async function loadItems(){
-  const tipo=document.getElementById("tipoItem").value;
-  const table=tipo==="publicidade"?"publicidades":"filmes";
-
-  const {data}=await db.from(table).select("*");
-  const list=document.getElementById("items");
-  list.innerHTML="";
-
-  data.forEach(i=>{
-    const dur=i.duracao_minutos||30;
-    list.innerHTML+=`
-      <div class="item" draggable="true"
-        data-id="${i.id}"
-        data-titulo="${i.titulo||i.nome}"
-        data-duracao="${dur}"
-        data-tipo="${tipo}">
-        <div>
-          <b>${i.titulo||i.nome}</b>
-          <small>${dur} min</small>
-        </div>
-      </div>`;
+  canais.forEach(c=>{
+    ch.innerHTML+=`<div class="channel">${c.nome}</div>`;
+    rows.innerHTML+=`<div class="row" data-canal="${c.id}"></div>`;
   });
 
-  document.querySelectorAll(".item").forEach(el=>{
-    el.addEventListener("dragstart",e=>{
-      e.dataTransfer.setData("text",JSON.stringify(el.dataset));
-    });
-  });
+  renderProgramacao();
 }
 
-/* DROP */
-dropArea.addEventListener("dragover",e=>e.preventDefault());
-
-dropArea.addEventListener("drop",async e=>{
-  const d=JSON.parse(e.dataTransfer.getData("text"));
-  const r=dropArea.getBoundingClientRect();
-  const start=Math.floor(((e.clientX-r.left)/r.width)*DAY_MINUTES);
-  await salvar(d,start);
-});
-
-/* SALVAR + RENDER */
-async function salvar(d,start){
-  const canal=document.getElementById("canalSelect").value;
+/* PROGRAMACAO */
+async function renderProgramacao(){
   const data=document.getElementById("data").value;
-  const dur=parseInt(d.duracao);
+  const {data:prog}=await db.from("programacao").select("*").eq("data",data);
 
-  let inicio=start;
-  let restante=dur;
-
-  while(restante>0){
-    const fim=Math.min(inicio+restante,1440);
-
-    await db.from("programacao").insert({
-      canal_id:canal,
-      filme_id:d.tipo==="conteudo"?d.id:null,
-      publicidade_id:d.tipo==="publicidade"?d.id:null,
-      tipo:d.tipo,
-      data,
-      inicio_minuto:inicio,
-      fim_minuto:fim,
-      duracao_minutos:fim-inicio
+  document.querySelectorAll(".row").forEach(row=>{
+    const canal=row.dataset.canal;
+    prog.filter(p=>p.canal_id===canal).forEach(p=>{
+      const b=document.createElement("div");
+      b.className=`block ${p.tipo}`;
+      b.style.left=(p.inicio_minuto/DAY)*100+"%";
+      b.style.width=((p.fim_minuto-p.inicio_minuto)/DAY)*100+"%";
+      b.innerHTML=`<b>${p.tipo}</b><small>${p.duracao_minutos} min</small>`;
+      row.appendChild(b);
     });
-
-    render(d.titulo,d.tipo,inicio,fim-inicio);
-    restante-=(fim-inicio);
-    inicio=0;
-  }
+  });
 }
-
-function render(titulo,tipo,start,dur){
-  const b=document.createElement("div");
-  b.className=`block ${tipo}`;
-  b.style.left=(start/DAY_MINUTES)*100+"%";
-  b.style.width=(dur/DAY_MINUTES)*100+"%";
-  b.innerHTML=`<b>${titulo}</b><small>${tipo.toUpperCase()} • ${dur} min</small>`;
-  dropArea.appendChild(b);
-}
-
-/* EVENTS */
-document.getElementById("tipoItem").addEventListener("change",loadItems);
 
 /* INIT */
 document.getElementById("data").value=new Date().toISOString().split("T")[0];
-loadCanais();
-loadItems();
+load();
 </script>
 
 </body>
