@@ -14,17 +14,20 @@ html,body{
   overflow:hidden;
   font-family:Inter,Arial,sans-serif;
 }
+
 #live{
   position:absolute;
   top:16px;
   left:16px;
   z-index:10;
-  background:rgba(0,0,0,.6);
+  background:rgba(0,0,0,.65);
   color:#fff;
-  padding:8px 14px;
+  padding:8px 16px;
   border-radius:999px;
   font-size:14px;
+  font-weight:600;
 }
+
 iframe{
   width:100%;
   height:100%;
@@ -36,7 +39,12 @@ iframe{
 <body>
 
 <div id="live">🔴 AO VIVO • Terror 24h</div>
-<iframe id="player" allow="autoplay; fullscreen"></iframe>
+<iframe
+  id="player"
+  allow="autoplay; fullscreen"
+  allowfullscreen
+  referrerpolicy="no-referrer">
+</iframe>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -51,8 +59,8 @@ const sb = supabase.createClient(
 
 const iframe = document.getElementById("player");
 
-/* ================= HELPERS ================= */
-function agoraMin(){
+/* ================= TEMPO ================= */
+function agoraMinutos(){
   const d = new Date();
   return d.getHours() * 60 + d.getMinutes();
 }
@@ -62,35 +70,48 @@ function hoje(){
 
 /* ================= AO VIVO ================= */
 async function carregarAoVivo(){
-  const min = agoraMin();
+  const agora = agoraMinutos();
 
-  const { data } = await sb
+  const { data, error } = await sb
     .from("programacao")
-    .select("inicio_minuto,duracao_minutos,filmes(video_url,titulo)")
+    .select(`
+      inicio_minuto,
+      duracao_minutos,
+      filmes(video_url,titulo)
+    `)
     .eq("canal", CANAL)
     .eq("data", hoje())
     .order("inicio_minuto");
 
-  if(!data || !data.length) return;
+  if(error || !data || !data.length) return;
 
   const atual = data.find(p =>
-    min >= p.inicio_minuto &&
-    min < p.inicio_minuto + p.duracao_minutos
+    agora >= p.inicio_minuto &&
+    agora < p.inicio_minuto + p.duracao_minutos
   );
 
   if(!atual) return;
 
+  /* SEGUNDOS JÁ EXECUTADOS */
+  const segundos =
+    Math.max(0, (agora - atual.inicio_minuto) * 60);
+
   const src =
-    `https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${atual.filmes.video_url}?autoplay=true`;
+    `https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${atual.filmes.video_url}` +
+    `?autoplay=1&muted=1&controls=0&t=${segundos}`;
 
   if(iframe.src !== src){
     iframe.src = src;
   }
 
-  const restante = (atual.inicio_minuto + atual.duracao_minutos - min) * 60000;
-  setTimeout(carregarAoVivo, restante + 1000);
+  /* AGENDAR PRÓXIMA TROCA */
+  const restanteMs =
+    ((atual.inicio_minuto + atual.duracao_minutos) - agora) * 60000;
+
+  setTimeout(carregarAoVivo, restanteMs + 1500);
 }
 
+/* INICIAR */
 carregarAoVivo();
 </script>
 
