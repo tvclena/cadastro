@@ -2,96 +2,174 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Sessão • AO VIVO</title>
+<title>CLENA TV • AO VIVO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-html,body{
-  margin:0;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
   background:#000;
-  width:100%;
-  height:100%;
-  overflow:hidden;
   font-family:Inter,Arial,sans-serif;
-}
-#live{
-  position:absolute;
-  top:16px;
-  left:16px;
-  z-index:10;
-  background:rgba(0,0,0,.6);
   color:#fff;
+  overflow:hidden;
+}
+
+/* TOPO */
+#top{
+  position:fixed;
+  top:12px;left:12px;right:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  z-index:99;
+}
+.badge{
   padding:8px 14px;
   border-radius:999px;
+  background:rgba(0,0,0,.65);
   font-size:14px;
 }
+.badge.live{background:#e50914}
+
+/* CANAIS */
+#canais{
+  position:fixed;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:10px;
+  z-index:99;
+}
+.canalBtn{
+  padding:12px 18px;
+  border-radius:999px;
+  background:rgba(0,0,0,.65);
+  border:1px solid #333;
+  color:#fff;
+  cursor:pointer;
+  font-size:14px;
+}
+.canalBtn.active{
+  background:#fff;
+  color:#000;
+}
+
+/* PLAYER */
+#player{
+  position:fixed;
+  inset:0;
+}
 iframe{
+  position:absolute;
+  inset:0;
   width:100%;
   height:100%;
   border:0;
+  background:#000;
 }
 </style>
 </head>
 
 <body>
 
-<div id="live">🔴 AO VIVO • Terror 24h</div>
-<iframe id="player" allow="autoplay; fullscreen"></iframe>
+<!-- TOPO -->
+<div id="top">
+  <div class="badge live">🔴 AO VIVO • <span id="canalNome"></span></div>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- PLAYER -->
+<div id="player">
+  <iframe id="liveFrame"
+    allow="autoplay; fullscreen"
+    allowfullscreen
+    referrerpolicy="no-referrer">
+  </iframe>
+</div>
+
+<!-- CANAIS -->
+<div id="canais"></div>
+
 <script>
 /* ================= CONFIG ================= */
-const LIBRARY_ID = "569072";
-const CANAL = "Terror 24h";
+const LIBRARY_ID = "569072"; // Bunny Stream Library
 
-const sb = supabase.createClient(
-  "https://dxkszikemntfusfyrzos.supabase.co",
-  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
-);
-
-const iframe = document.getElementById("player");
-
-/* ================= HELPERS ================= */
-function agoraMin(){
-  const d = new Date();
-  return d.getHours() * 60 + d.getMinutes();
-}
-function hoje(){
-  return new Date().toISOString().split("T")[0];
-}
-
-/* ================= AO VIVO ================= */
-async function carregarAoVivo(){
-  const min = agoraMin();
-
-  const { data } = await sb
-    .from("programacao")
-    .select("inicio_minuto,duracao_minutos,filmes(video_url,titulo)")
-    .eq("canal", CANAL)
-    .eq("data", hoje())
-    .order("inicio_minuto");
-
-  if(!data || !data.length) return;
-
-  const atual = data.find(p =>
-    min >= p.inicio_minuto &&
-    min < p.inicio_minuto + p.duracao_minutos
-  );
-
-  if(!atual) return;
-
-  const src =
-    `https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${atual.filmes.video_url}?autoplay=true`;
-
-  if(iframe.src !== src){
-    iframe.src = src;
+/* ================= CANAIS ================= */
+const canais = [
+  {
+    nome:"Filmes 24h",
+    grade:[
+      { inicio:"00:00", video:"VIDEO_ID_1", duracao:120 },
+      { inicio:"02:00", video:"VIDEO_ID_2", duracao:110 },
+      { inicio:"04:00", video:"VIDEO_ID_3", duracao:130 }
+    ]
+  },
+  {
+    nome:"Terror 24h",
+    grade:[
+      { inicio:"00:00", video:"VIDEO_ID_T1", duracao:120 },
+      { inicio:"02:00", video:"VIDEO_ID_T2", duracao:120 },
+      { inicio:"04:00", video:"VIDEO_ID_T3", duracao:120 }
+    ]
   }
+];
 
-  const restante = (atual.inicio_minuto + atual.duracao_minutos - min) * 60000;
-  setTimeout(carregarAoVivo, restante + 1000);
+/* ================= ELEMENTOS ================= */
+const iframe = document.getElementById("liveFrame");
+const canalNome = document.getElementById("canalNome");
+const canaisBox = document.getElementById("canais");
+
+let canalAtual = 0;
+
+/* ================= GRADE ================= */
+function minutosAgora(){
+  const d = new Date();
+  return d.getHours()*60 + d.getMinutes();
 }
 
-carregarAoVivo();
+function videoAoVivo(canal){
+  const agora = minutosAgora();
+  const grade = canais[canal].grade;
+
+  for(let i=grade.length-1;i>=0;i--){
+    const [h,m] = grade[i].inicio.split(":").map(Number);
+    const inicio = h*60 + m;
+    if(agora >= inicio) return grade[i].video;
+  }
+  return grade[0].video;
+}
+
+/* ================= PLAYER ================= */
+function tocarCanal(idx){
+  canalAtual = idx;
+  const canal = canais[idx];
+
+  canalNome.textContent = canal.nome;
+
+  document.querySelectorAll(".canalBtn").forEach((b,i)=>{
+    b.classList.toggle("active", i===idx);
+  });
+
+  const videoId = videoAoVivo(idx);
+
+  iframe.src =
+    `https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${videoId}?autoplay=true&muted=false`;
+}
+
+/* ================= UI CANAIS ================= */
+canais.forEach((c,i)=>{
+  const b = document.createElement("button");
+  b.className = "canalBtn";
+  b.textContent = c.nome;
+  b.onclick = ()=>tocarCanal(i);
+  canaisBox.appendChild(b);
+});
+
+/* ================= INIT ================= */
+tocarCanal(0);
+
+// Atualiza a cada minuto (troca automática)
+setInterval(()=>tocarCanal(canalAtual), 60000);
 </script>
 
 </body>
