@@ -2,19 +2,18 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>📺 EPG – Grade Linear</title>
+<title>📺 EPG Profissional</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root{
-  --bg:#0b0f17;
-  --panel:#0f1420;
-  --card:#1c2230;
+  --bg:#070a11;
+  --panel:#0e1422;
+  --card:#1c2436;
   --line:#222a3a;
   --content:#2bbcff;
-  --ad:#ffb300;
   --text:#fff;
   --muted:#9aa4b2;
 }
@@ -38,18 +37,17 @@ body{
   border-bottom:1px solid var(--line);
 }
 
-/* LAYOUT */
+/* GRID */
 .wrapper{
   display:grid;
   grid-template-columns:220px 1fr;
   height:calc(100vh - 64px);
 }
 
-/* LEFT – CANAIS */
+/* CHANNELS */
 .channels{
   background:var(--panel);
   border-right:1px solid var(--line);
-  overflow-y:auto;
 }
 
 .channel{
@@ -59,34 +57,29 @@ body{
   padding:0 16px;
   border-bottom:1px solid var(--line);
   font-weight:600;
+  cursor:pointer;
 }
 
-/* RIGHT – GRID */
-.grid{
-  overflow:auto;
-  position:relative;
-}
+/* GRID */
+.grid{overflow:auto}
 
-/* TIME HEADER */
 .time-header{
   display:flex;
   position:sticky;
   top:0;
-  z-index:5;
   background:var(--panel);
   border-bottom:1px solid var(--line);
+  z-index:5;
 }
 
 .time{
   min-width:160px;
   text-align:center;
   padding:12px 0;
-  font-size:13px;
   color:var(--muted);
   border-left:1px solid var(--line);
 }
 
-/* ROW */
 .row{
   position:relative;
   height:90px;
@@ -99,24 +92,70 @@ body{
   top:12px;
   height:66px;
   border-radius:12px;
-  padding:8px 10px;
+  padding:8px;
+  background:var(--content);
   color:#000;
-  font-size:13px;
+  cursor:grab;
   overflow:hidden;
 }
 
-.block.conteudo{background:var(--content)}
-.block.publicidade{background:var(--ad)}
+.block img{
+  width:40px;
+  height:56px;
+  object-fit:cover;
+  border-radius:6px;
+  float:left;
+  margin-right:8px;
+}
 
-.block b{display:block;font-size:14px}
+.block b{font-size:13px;display:block}
 .block small{font-size:11px}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:99;
+}
+
+.modal-box{
+  width:600px;
+  max-height:80vh;
+  background:#0e1422;
+  border-radius:16px;
+  overflow:auto;
+  padding:20px;
+}
+
+.modal-item{
+  display:flex;
+  gap:12px;
+  background:var(--card);
+  padding:12px;
+  border-radius:12px;
+  cursor:pointer;
+  margin-bottom:10px;
+}
+
+.modal-item img{
+  width:60px;
+  height:90px;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+.modal-item small{color:var(--muted)}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-  <b>📺 Grade Linear</b>
+  <b>📺 EPG Profissional</b>
   <input type="date" id="data">
 </div>
 
@@ -129,50 +168,107 @@ body{
   </div>
 </div>
 
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
 <script>
-const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = window.supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
 
 const DAY = 1440;
+let currentCanal = null;
 
-/* TIME HEADER */
-const timeHeader=document.getElementById("timeHeader");
+/* TIME */
+const th=document.getElementById("timeHeader");
 for(let h=0;h<24;h++){
-  timeHeader.innerHTML+=`<div class="time">${String(h).padStart(2,"0")}:00</div>`;
+  th.innerHTML+=`<div class="time">${String(h).padStart(2,"0")}:00</div>`;
 }
 
-/* LOAD CANAIS + GRADE */
+/* LOAD */
 async function load(){
+  const data=document.getElementById("data").value;
   const {data:canais}=await db.from("canais").select("*").order("ordem");
+
   const ch=document.getElementById("channels");
   const rows=document.getElementById("rows");
   ch.innerHTML=""; rows.innerHTML="";
 
   canais.forEach(c=>{
-    ch.innerHTML+=`<div class="channel">${c.nome}</div>`;
+    ch.innerHTML+=`<div class="channel" ondblclick="openModal('${c.id}')">${c.nome}</div>`;
     rows.innerHTML+=`<div class="row" data-canal="${c.id}"></div>`;
   });
 
-  renderProgramacao();
-}
-
-/* PROGRAMACAO */
-async function renderProgramacao(){
-  const data=document.getElementById("data").value;
-  const {data:prog}=await db.from("programacao").select("*").eq("data",data);
+  const {data:prog}=await db.from("programacao").select("*, filmes(*)").eq("data",data);
 
   document.querySelectorAll(".row").forEach(row=>{
     const canal=row.dataset.canal;
     prog.filter(p=>p.canal_id===canal).forEach(p=>{
       const b=document.createElement("div");
-      b.className=`block ${p.tipo}`;
+      b.className="block";
       b.style.left=(p.inicio_minuto/DAY)*100+"%";
       b.style.width=((p.fim_minuto-p.inicio_minuto)/DAY)*100+"%";
-      b.innerHTML=`<b>${p.tipo}</b><small>${p.duracao_minutos} min</small>`;
+      b.innerHTML=`
+        <img src="${p.filmes?.capa_url}">
+        <b>${p.filmes?.titulo}</b>
+        <small>${p.duracao_minutos} min</small>
+      `;
       row.appendChild(b);
     });
   });
+}
+
+/* MODAL */
+async function openModal(canal){
+  currentCanal = canal;
+  const modal=document.getElementById("modal");
+  const box=document.getElementById("modalBox");
+  modal.style.display="flex";
+  box.innerHTML="<h3>Selecionar conteúdo</h3>";
+
+  const {data:filmes}=await db.from("filmes").select("*").eq("ativo",true);
+
+  filmes.forEach(f=>{
+    box.innerHTML+=`
+      <div class="modal-item" onclick="addConteudo('${f.id}',${f.duracao_minutos||120})">
+        <img src="${f.capa_url}">
+        <div>
+          <b>${f.titulo}</b>
+          <small>${f.categoria} • ${f.duracao_minutos||120} min</small>
+        </div>
+      </div>
+    `;
+  });
+}
+
+/* ADD */
+async function addConteudo(filmeId,dur){
+  const data=document.getElementById("data").value;
+
+  const {data:last}=await db
+    .from("programacao")
+    .select("*")
+    .eq("canal_id",currentCanal)
+    .eq("data",data)
+    .order("fim_minuto",{ascending:false})
+    .limit(1);
+
+  let inicio = last?.[0]?.fim_minuto || 0;
+
+  await db.from("programacao").insert({
+    canal_id:currentCanal,
+    filme_id:filmeId,
+    data,
+    inicio_minuto:inicio,
+    fim_minuto:inicio+dur,
+    duracao_minutos:dur
+  });
+
+  document.getElementById("modal").style.display="none";
+  load();
 }
 
 /* INIT */
