@@ -13,72 +13,166 @@
   --line:#1f2a3d;
   --card:#1c2436;
   --content:#2bbcff;
-  --text:#fff;
+  --text:#ffffff;
   --muted:#9aa4b2;
+  --hover:#23304a;
 }
+
 *{box-sizing:border-box;font-family:Inter,system-ui}
-body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#fff;overflow:hidden}
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#101a30,#070a11);
+  color:var(--text);
+  overflow:hidden;
+}
 
 /* TOP */
 .topbar{
-  height:64px;display:flex;align-items:center;gap:16px;
-  padding:0 24px;border-bottom:1px solid var(--line)
+  height:64px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:0 24px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,#0b1222,#0a0f1d);
 }
+.topbar b{font-size:18px}
 
-/* GRID */
-.wrapper{display:grid;grid-template-columns:220px 1fr;height:calc(100vh - 64px)}
+/* LAYOUT */
+.wrapper{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  height:calc(100vh - 64px);
+}
 
 /* CANAIS */
-.channels{background:var(--panel);border-right:1px solid var(--line)}
-.channel{
-  height:90px;display:flex;align-items:center;
-  padding:0 16px;border-bottom:1px solid var(--line);
-  cursor:pointer;font-weight:600
+.channels{
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  overflow-y:auto;
 }
-.channel.selected{background:#16203a}
+.channel{
+  height:90px;
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+  font-weight:600;
+  transition:.2s;
+}
+.channel:hover{background:var(--hover)}
+.channel.selected{
+  background:#16203a;
+  box-shadow:inset 4px 0 0 var(--content);
+}
 
 /* GRADE */
 .grid{overflow:auto}
-.time-header{display:flex;position:sticky;top:0;background:var(--panel);z-index:5}
-.time{
-  min-width:160px;text-align:center;
-  padding:10px 0;border-left:1px solid var(--line);
-  color:var(--muted);font-size:13px
+.time-header{
+  display:flex;
+  position:sticky;
+  top:0;
+  background:var(--panel);
+  z-index:10;
 }
-.row{position:relative;height:90px;border-bottom:1px solid var(--line)}
+.time{
+  min-width:160px;
+  text-align:center;
+  padding:10px 0;
+  border-left:1px solid var(--line);
+  color:var(--muted);
+  font-size:13px;
+}
+.row{
+  position:relative;
+  height:90px;
+  border-bottom:1px solid var(--line);
+}
 
 /* BLOCO */
 .block{
-  position:absolute;top:12px;height:66px;border-radius:12px;
-  padding:6px 8px;background:var(--content);
-  color:#000;font-size:12px;cursor:grab;overflow:hidden
+  position:absolute;
+  top:12px;
+  height:66px;
+  border-radius:12px;
+  padding:6px 8px;
+  background:linear-gradient(135deg,#36c7ff,#1aa3e8);
+  color:#00131d;
+  font-size:12px;
+  cursor:grab;
+  overflow:hidden;
+  box-shadow:0 4px 10px rgba(0,0,0,.4);
 }
 .block img{
-  width:36px;height:52px;border-radius:6px;
-  float:left;margin-right:6px;object-fit:cover
+  width:36px;
+  height:52px;
+  border-radius:6px;
+  float:left;
+  margin-right:6px;
+  object-fit:cover;
+}
+.block small{
+  display:block;
+  opacity:.7;
+  font-size:11px;
 }
 
 /* MODAL */
 .modal{
-  position:fixed;inset:0;background:rgba(0,0,0,.6);
-  display:none;align-items:center;justify-content:center;z-index:99
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:99;
 }
 .modal-box{
-  width:760px;max-height:80vh;background:#0e1422;
-  border-radius:16px;padding:16px;display:flex;flex-direction:column
+  width:820px;
+  max-height:80vh;
+  background:#0e1422;
+  border-radius:18px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
 }
-.modal-header{display:flex;gap:8px;margin-bottom:12px}
-.modal-header input,select{
-  flex:1;padding:10px;border-radius:10px;
-  border:none;background:var(--card);color:#fff
+.modal-header{
+  display:flex;
+  gap:10px;
+  margin-bottom:12px;
 }
-.modal-list{overflow-y:auto;flex:1}
+.modal-header input,
+.modal-header select{
+  flex:1;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:var(--card);
+  color:#fff;
+}
+.modal-list{
+  overflow-y:auto;
+  flex:1;
+  padding-right:6px;
+}
 .modal-item{
-  display:flex;gap:12px;padding:10px;border-radius:12px;
-  background:var(--card);cursor:pointer;margin-bottom:10px
+  display:flex;
+  gap:12px;
+  padding:10px;
+  border-radius:14px;
+  background:var(--card);
+  cursor:pointer;
+  margin-bottom:10px;
+  transition:.2s;
 }
+.modal-item:hover{background:#24304a}
 .modal-item img{
-  width:60px;height:90px;border-radius:8px;object-fit:cover
+  width:60px;
+  height:90px;
+  border-radius:8px;
+  object-fit:cover;
 }
 .modal-item small{color:var(--muted)}
 </style>
@@ -93,6 +187,7 @@ body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#f
 
 <div class="wrapper">
   <div class="channels" id="channels"></div>
+
   <div class="grid">
     <div class="time-header" id="timeHeader"></div>
     <div id="rows"></div>
@@ -111,17 +206,18 @@ body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#f
 </div>
 
 <script>
-/* SUPABASE */
+/* ================= SUPABASE ================= */
 const db = window.supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
+/* ================= VARS ================= */
 const DAY = 1440;
 let canalSelecionado = null;
 let filmesCache = [];
 
-/* HELPERS */
+/* ================= HELPERS ================= */
 function minToTime(min){
   const h=Math.floor(min/60);
   const m=min%60;
@@ -132,13 +228,13 @@ function timeToMin(t){
   return h*60+m;
 }
 
-/* TIME HEADER */
+/* ================= TIME HEADER ================= */
 const th=document.getElementById("timeHeader");
 for(let h=0;h<24;h++){
   th.innerHTML+=`<div class="time">${String(h).padStart(2,"0")}:00</div>`;
 }
 
-/* LOAD BASE */
+/* ================= LOAD ================= */
 async function load(){
   const data=document.getElementById("data").value;
 
@@ -154,24 +250,25 @@ async function load(){
     el.onclick=()=>selectCanal(c.id,el);
     el.ondblclick=openModal;
     ch.appendChild(el);
+
     rows.innerHTML+=`<div class="row" data-canal="${c.id}"></div>`;
   });
 
   const {data:filmes}=await db.from("filmes").select("*").eq("ativo",true);
-  filmesCache = filmes;
+  filmesCache = filmes || [];
 
   popularCategorias();
   renderProgramacao(data);
 }
 
-/* SELECT CANAL */
+/* ================= CANAL ================= */
 function selectCanal(id,el){
   canalSelecionado=id;
   document.querySelectorAll(".channel").forEach(c=>c.classList.remove("selected"));
   el.classList.add("selected");
 }
 
-/* PROGRAMACAO */
+/* ================= PROGRAMAÇÃO ================= */
 async function renderProgramacao(data){
   const {data:prog}=await db
     .from("programacao")
@@ -181,30 +278,34 @@ async function renderProgramacao(data){
   document.querySelectorAll(".row").forEach(row=>{
     row.innerHTML="";
     const canal=row.dataset.canal;
+
     prog.filter(p=>p.canal_id===canal).forEach(p=>{
       const ini=timeToMin(p.hora_inicio);
       const fim=timeToMin(p.hora_fim);
+
       const b=document.createElement("div");
       b.className="block";
       b.style.left=(ini/DAY)*100+"%";
       b.style.width=((fim-ini)/DAY)*100+"%";
+
       b.innerHTML=`
-        <img src="${p.filmes?.capa_url}">
-        <b>${p.filmes?.titulo}</b>
-        <small>${p.duracao_minutos} min</small>`;
+        <img src="${p.filmes?.capa_url || ''}">
+        <b>${p.filmes?.titulo || 'Conteúdo'}</b>
+        <small>${p.duracao_minutos} min</small>
+      `;
       row.appendChild(b);
     });
   });
 }
 
-/* MODAL */
+/* ================= MODAL ================= */
 function openModal(){
   if(!canalSelecionado) return alert("Selecione um canal");
   document.getElementById("modal").style.display="flex";
   aplicarFiltro();
 }
 
-/* CATEGORIAS */
+/* ================= CATEGORIAS ================= */
 function popularCategorias(){
   const sel=document.getElementById("filtroCategoria");
   const cats=[...new Set(filmesCache.map(f=>f.categoria).filter(Boolean))];
@@ -212,7 +313,7 @@ function popularCategorias(){
   cats.forEach(c=>sel.innerHTML+=`<option>${c}</option>`);
 }
 
-/* FILTRO */
+/* ================= FILTRO ================= */
 function aplicarFiltro(){
   const nome=document.getElementById("filtroNome").value.toLowerCase();
   const cat=document.getElementById("filtroCategoria").value;
@@ -226,6 +327,7 @@ function aplicarFiltro(){
       const div=document.createElement("div");
       div.className="modal-item";
       div.ondblclick=()=>addConteudo(f);
+
       div.innerHTML=`
         <img src="${f.capa_url}">
         <div>
@@ -236,67 +338,57 @@ function aplicarFiltro(){
     });
 }
 
+/* ================= INSERT ================= */
 async function addConteudo(f){
-  const dataStr = document.getElementById("data").value;
-  const dataAtual = new Date(dataStr + "T00:00:00");
+  const dataStr=document.getElementById("data").value;
 
-  const { data:last } = await db
+  const {data:last}=await db
     .from("programacao")
     .select("*")
-    .eq("canal_id", canalSelecionado)
-    .eq("data", dataStr)
-    .order("hora_fim", { ascending: false })
+    .eq("canal_id",canalSelecionado)
+    .eq("data",dataStr)
+    .order("hora_fim",{ascending:false})
     .limit(1);
 
-  let inicioMin = last?.[0]
-    ? timeToMin(last[0].hora_fim)
-    : 0;
+  let inicioMin=last?.[0]?timeToMin(last[0].hora_fim):0;
+  let dur=f.duracao_minutos||120;
+  let restante=dur;
 
-  let dur = f.duracao_minutos || 120;
-  let restante = dur;
-
-  // PARTE 1 – DIA ATUAL
-  if (inicioMin < 1440) {
-    const fimHoje = Math.min(1440, inicioMin + restante);
-
+  if(inicioMin<DAY && restante>0){
+    const fimHoje=Math.min(DAY,inicioMin+restante);
     await db.from("programacao").insert({
-      canal_id: canalSelecionado,
-      filme_id: f.id,
-      data: dataStr,
-      hora_inicio: minToTime(inicioMin),
-      hora_fim: minToTime(fimHoje === 1440 ? 1439 : fimHoje),
-      duracao_minutos: fimHoje - inicioMin
+      canal_id:canalSelecionado,
+      filme_id:f.id,
+      data:dataStr,
+      hora_inicio:minToTime(inicioMin),
+      hora_fim:fimHoje>=DAY?"23:59:59":minToTime(fimHoje),
+      duracao_minutos:fimHoje-inicioMin
     });
-
-    restante -= (fimHoje - inicioMin);
+    restante-=(fimHoje-inicioMin);
   }
 
-  // PARTE 2 – DIA SEGUINTE
-  if (restante > 0) {
-    const proximoDia = new Date(dataAtual);
-    proximoDia.setDate(proximoDia.getDate() + 1);
-    const dataNext = proximoDia.toISOString().split("T")[0];
-
+  if(restante>0){
+    const next=new Date(dataStr);
+    next.setDate(next.getDate()+1);
     await db.from("programacao").insert({
-      canal_id: canalSelecionado,
-      filme_id: f.id,
-      data: dataNext,
-      hora_inicio: "00:00:00",
-      hora_fim: minToTime(restante),
-      duracao_minutos: restante
+      canal_id:canalSelecionado,
+      filme_id:f.id,
+      data:next.toISOString().split("T")[0],
+      hora_inicio:"00:00:00",
+      hora_fim:minToTime(restante),
+      duracao_minutos:restante
     });
   }
 
-  document.getElementById("modal").style.display = "none";
+  document.getElementById("modal").style.display="none";
   load();
 }
 
-
-/* EVENTS */
+/* ================= EVENTS ================= */
 document.getElementById("filtroNome").oninput=aplicarFiltro;
 document.getElementById("filtroCategoria").onchange=aplicarFiltro;
 
-/* INIT */
+/* ================= INIT ================= */
 document.getElementById("data").value=new Date().toISOString().split("T")[0];
 load();
 </script>
