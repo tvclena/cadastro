@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>CLENA TV • AO VIVO</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- SUPABASE SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- HLS -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
-html, body {
+html,body{
   margin:0;
-  padding:0;
   width:100%;
   height:100%;
   background:black;
@@ -19,22 +21,22 @@ html, body {
   font-family:Inter,system-ui;
 }
 
-#player {
+#player{
   width:100vw;
   height:100vh;
   background:black;
 }
 
-#overlay {
-  position:absolute;
+#info{
+  position:fixed;
   top:16px;
   left:16px;
   color:white;
-  font-size:14px;
   z-index:10;
+  font-size:14px;
 }
 
-#overlay span {
+#info span{
   color:#ff3b3b;
 }
 </style>
@@ -42,9 +44,7 @@ html, body {
 
 <body>
 
-<div id="overlay">
-  🔴 <span>AO VIVO</span> • <span id="canalNome"></span>
-</div>
+<div id="info">🔴 <span>AO VIVO</span> • Terror 24h</div>
 
 <video id="player" autoplay muted playsinline></video>
 
@@ -54,46 +54,46 @@ html, body {
 const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
 const SUPABASE_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
 
+/* BUNNY CDN */
 const BUNNY_PULL = "https://sessao99.b-cdn.net";
 
-/* CANAL FIXO (depois você pode passar por URL) */
+/* CANAL */
 const CANAL = "Terror 24h";
 
 /* ================= INIT ================= */
 
-const supabase = window.supabase.createClient(
+/* ⚠️ NÃO use const supabase */
+const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
 
-document.getElementById("canalNome").innerText = CANAL;
-
 /* ================= HELPERS ================= */
 
 function minutosAgora(){
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
+  const n = new Date();
+  return n.getHours()*60 + n.getMinutes();
 }
 
 /* ================= PLAYER ================= */
 
-async function carregarAoVivo(){
+async function iniciarAoVivo(){
 
   const hoje = new Date().toISOString().split("T")[0];
-  const agoraMin = minutosAgora();
+  const agora = minutosAgora();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("programacao")
     .select("*, filmes(*)")
     .eq("canal", CANAL)
     .eq("data", hoje)
-    .lte("inicio_minuto", agoraMin)
-    .order("inicio_minuto", { ascending: false })
+    .lte("inicio_minuto", agora)
+    .order("inicio_minuto", { ascending:false })
     .limit(1);
 
   if(error || !data || !data.length){
-    console.log("Nenhuma programação agora");
-    setTimeout(carregarAoVivo, 10000);
+    console.log("Sem programação ativa");
+    setTimeout(iniciarAoVivo, 10000);
     return;
   }
 
@@ -101,54 +101,49 @@ async function carregarAoVivo(){
   const filme = prog.filmes;
 
   if(!filme?.video_url){
-    console.error("Filme sem video_url");
+    console.error("Sem video_url");
     return;
   }
 
-  const offsetSegundos =
-    (agoraMin - prog.inicio_minuto) * 60;
-
-  tocarVideo(filme.video_url, offsetSegundos);
+  const offset = (agora - prog.inicio_minuto) * 60;
+  tocarBunny(filme.video_url, offset);
 }
 
-/* ================= TOCAR VIDEO ================= */
+/* ================= BUNNY ================= */
 
-function tocarVideo(videoId, startSeconds){
+function tocarBunny(videoId, start){
 
   const video = document.getElementById("player");
   const src = `${BUNNY_PULL}/${videoId}/play.m3u8`;
 
   if(Hls.isSupported()){
     const hls = new Hls({
-      startPosition: startSeconds,
-      enableWorker: true,
-      lowLatencyMode: true
+      startPosition:start,
+      lowLatencyMode:true
     });
 
     hls.loadSource(src);
     hls.attachMedia(video);
 
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
       video.play();
     });
 
-    video.onended = () => {
-      location.reload();
-    };
+    video.onended = ()=> location.reload();
 
-  } else if(video.canPlayType("application/vnd.apple.mpegurl")){
+  }else{
     video.src = src;
-    video.currentTime = startSeconds;
+    video.currentTime = start;
     video.play();
   }
 }
 
 /* ================= START ================= */
 
-carregarAoVivo();
+iniciarAoVivo();
 
 /* REVALIDA A CADA 1 MINUTO */
-setInterval(carregarAoVivo, 60000);
+setInterval(iniciarAoVivo, 60000);
 </script>
 
 </body>
