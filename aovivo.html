@@ -1,171 +1,154 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>📺 Canal Ao Vivo</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<title>CLENA TV • AO VIVO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<!-- HLS -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
-html,body{
+html, body {
   margin:0;
-  background:#000;
-  color:#fff;
+  padding:0;
   width:100%;
   height:100%;
+  background:black;
   overflow:hidden;
   font-family:Inter,system-ui;
 }
-#player{
+
+#player {
   width:100vw;
   height:100vh;
-  background:#000;
+  background:black;
 }
-.top{
+
+#overlay {
   position:absolute;
-  top:12px;
-  left:12px;
+  top:16px;
+  left:16px;
+  color:white;
+  font-size:14px;
   z-index:10;
-  background:rgba(0,0,0,.6);
-  padding:8px 14px;
-  border-radius:10px;
-  font-weight:600;
 }
-.live{
+
+#overlay span {
   color:#ff3b3b;
-  margin-right:6px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="top">
-  <span class="live">● AO VIVO</span>
-  <span id="canalNome">Canal</span>
+<div id="overlay">
+  🔴 <span>AO VIVO</span> • <span id="canalNome"></span>
 </div>
 
-<video
-  id="player"
-  autoplay
-  muted
-  playsinline
-  preload="auto"
-  disablepictureinpicture
-  controlslist="nodownload nofullscreen noremoteplayback">
-</video>
+<video id="player" autoplay muted playsinline></video>
 
 <script>
-/* ==========================
-   CONFIGURAÇÃO
-========================== */
+/* ================= CONFIG ================= */
 
-// 🔴 TROQUE AQUI
 const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
 const SUPABASE_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
 
-// 🔴 TROQUE PELO SEU PULL ZONE
-const BUNNY_PULL = "vz-XXXXXX"; // ex: vz-9f3a2e
+const BUNNY_PULL = "https://sessao99.b-cdn.net";
 
-// 🔴 CANAL ATUAL
+/* CANAL FIXO (depois você pode passar por URL) */
 const CANAL = "Terror 24h";
 
-/* ==========================
-   SUPABASE
-========================== */
+/* ================= INIT ================= */
+
 const supabase = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
 
-const player = document.getElementById("player");
 document.getElementById("canalNome").innerText = CANAL;
 
-let hls;
+/* ================= HELPERS ================= */
 
-/* ==========================
-   HELPERS
-========================== */
-function minutoAgora(){
-  const d = new Date();
-  return d.getHours()*60 + d.getMinutes();
+function minutosAgora(){
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
 }
 
-function dataHoje(){
-  return new Date().toISOString().split("T")[0];
-}
+/* ================= PLAYER ================= */
 
-/* ==========================
-   PLAYER
-========================== */
-function tocarVideo(videoId){
-  const url = `https://${BUNNY_PULL}.b-cdn.net/${videoId}/play.m3u8`;
-
-  if(hls){
-    hls.destroy();
-    hls = null;
-  }
-
-  if(Hls.isSupported()){
-    hls = new Hls();
-    hls.loadSource(url);
-    hls.attachMedia(player);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      player.play().catch(()=>{});
-    });
-  } else {
-    player.src = url;
-    player.play().catch(()=>{});
-  }
-}
-
-/* ==========================
-   BUSCAR PROGRAMAÇÃO ATUAL
-========================== */
 async function carregarAoVivo(){
-  const minuto = minutoAgora();
-  const hoje = dataHoje();
+
+  const hoje = new Date().toISOString().split("T")[0];
+  const agoraMin = minutosAgora();
 
   const { data, error } = await supabase
     .from("programacao")
-    .select(`
-      inicio_minuto,
-      duracao_minutos,
-      filmes (
-        titulo,
-        video_url
-      )
-    `)
+    .select("*, filmes(*)")
     .eq("canal", CANAL)
     .eq("data", hoje)
-    .lte("inicio_minuto", minuto)
-    .order("inicio_minuto", { ascending:false })
+    .lte("inicio_minuto", agoraMin)
+    .order("inicio_minuto", { ascending: false })
     .limit(1);
 
-  if(error || !data || !data.length) return;
+  if(error || !data || !data.length){
+    console.log("Nenhuma programação agora");
+    setTimeout(carregarAoVivo, 10000);
+    return;
+  }
 
-  const item = data[0];
-  const fim = item.inicio_minuto + item.duracao_minutos;
+  const prog = data[0];
+  const filme = prog.filmes;
 
-  if(minuto >= fim) return;
+  if(!filme?.video_url){
+    console.error("Filme sem video_url");
+    return;
+  }
 
-  tocarVideo(item.filmes.video_url);
+  const offsetSegundos =
+    (agoraMin - prog.inicio_minuto) * 60;
 
-  // agenda troca automática
-  const segundosRestantes = (fim - minuto) * 60;
-  setTimeout(carregarAoVivo, segundosRestantes * 1000 + 1000);
+  tocarVideo(filme.video_url, offsetSegundos);
 }
 
-/* ==========================
-   START
-========================== */
+/* ================= TOCAR VIDEO ================= */
+
+function tocarVideo(videoId, startSeconds){
+
+  const video = document.getElementById("player");
+  const src = `${BUNNY_PULL}/${videoId}/play.m3u8`;
+
+  if(Hls.isSupported()){
+    const hls = new Hls({
+      startPosition: startSeconds,
+      enableWorker: true,
+      lowLatencyMode: true
+    });
+
+    hls.loadSource(src);
+    hls.attachMedia(video);
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play();
+    });
+
+    video.onended = () => {
+      location.reload();
+    };
+
+  } else if(video.canPlayType("application/vnd.apple.mpegurl")){
+    video.src = src;
+    video.currentTime = startSeconds;
+    video.play();
+  }
+}
+
+/* ================= START ================= */
+
 carregarAoVivo();
-setInterval(carregarAoVivo, 60000); // segurança
+
+/* REVALIDA A CADA 1 MINUTO */
+setInterval(carregarAoVivo, 60000);
 </script>
 
 </body>
