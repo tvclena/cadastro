@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>📺 CLENA TV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  background:black;
+  overflow:hidden;
+}
+#player{
+  width:100%;
+  height:100%;
+  border:none;
+}
+#canal{
+  position:fixed;
+  top:12px;
+  left:12px;
+  z-index:10;
+  background:rgba(0,0,0,.6);
+  color:#fff;
+  padding:8px 14px;
+  border-radius:10px;
+  font-weight:600;
+}
+</style>
+</head>
+<body>
+
+<div id="canal">Terror 24h</div>
+<iframe id="player" allow="autoplay; fullscreen"></iframe>
+
+<script>
+/* SUPABASE */
+const db = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+const CANAL = "Terror 24h";
+
+async function carregarAoVivo(){
+  const agora = new Date();
+  const dataHoje = agora.toISOString().split("T")[0];
+  const minutosAgora = agora.getHours()*60 + agora.getMinutes();
+
+  const { data } = await db
+    .from("programacao")
+    .select("inicio_minuto,duracao_minutos,filmes(video_url)")
+    .eq("canal", CANAL)
+    .eq("data", dataHoje)
+    .lte("inicio_minuto", minutosAgora)
+    .gt("inicio_minuto + duracao_minutos", minutosAgora)
+    .limit(1);
+
+  if(!data || !data[0]) return;
+
+  const prog = data[0];
+  const offsetMin = minutosAgora - prog.inicio_minuto;
+  const offsetSeg = offsetMin * 60;
+
+  const videoId = prog.filmes.video_url;
+
+  const url = `https://video.bunnycdn.com/embed/${videoId}?autoplay=true&controls=false&start=${offsetSeg}`;
+
+  document.getElementById("player").src = url;
+}
+
+/* ATUALIZA A CADA 30s */
+carregarAoVivo();
+setInterval(carregarAoVivo, 30000);
+</script>
+
+</body>
+</html>
