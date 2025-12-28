@@ -9,339 +9,231 @@
 
 <style>
 :root{
-  --bg:#05060c;
-  --panel:#0f1424;
-  --card:#151a30;
-  --input:#0b1020;
-  --accent:#dc2626;
-  --danger:#7f1d1d;
-  --text:#e5e7eb;
-  --muted:#9ca3af;
-  --border:#1f2937;
+  --panel:#0f1424;--card:#151a30;--input:#0b1020;
+  --accent:#dc2626;--danger:#7f1d1d;--text:#e5e7eb;
 }
-
 *{box-sizing:border-box}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter,system-ui,Arial;
-}
-
-.wrapper{
-  height:100vh;
-  padding:16px;
-  display:grid;
-  grid-template-columns:380px 1fr;
-  gap:16px;
-}
-
-.panel{
-  background:linear-gradient(180deg,#0f1424,#0b1020);
-  border-radius:18px;
-  padding:16px;
-  display:flex;
-  flex-direction:column;
-  box-shadow:0 10px 30px rgba(0,0,0,.4);
-}
-
-h3,h4{margin:6px 0 10px}
-label{font-size:12px;color:var(--muted);margin-top:10px}
-
+body{margin:0;background:#05060c;color:var(--text);font-family:Inter,Arial}
+.wrapper{height:100vh;padding:16px;display:grid;grid-template-columns:360px 1fr;gap:16px}
+.panel{background:var(--panel);border-radius:16px;padding:16px;display:flex;flex-direction:column}
 input,textarea,select{
-  width:100%;
-  margin-top:6px;
-  padding:11px 12px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  background:var(--input);
-  color:#fff;
+  width:100%;margin-top:6px;padding:10px;border-radius:10px;
+  border:none;background:var(--input);color:#fff
 }
+button{margin-top:12px;padding:12px;border:none;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer}
+.grid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.card{background:var(--card);border-radius:12px;overflow:hidden;cursor:pointer}
+.card img{width:100%;height:180px;object-fit:cover}
+.card .box{padding:8px;font-size:13px}
 
-textarea{resize:vertical;min-height:70px}
-
-button{
-  margin-top:14px;
-  padding:12px;
-  border:none;
-  border-radius:14px;
-  background:var(--accent);
-  color:#fff;
-  cursor:pointer;
-  font-weight:600;
+.episodio{
+  background:#0b1020;border-radius:12px;padding:10px;margin-top:10px;
+  display:grid;grid-template-columns:60px 1fr auto;gap:6px;align-items:center
 }
-
-button.secondary{background:#1f2937}
-button.danger{background:var(--danger)}
-
-.grid{
-  flex:1;
-  overflow:auto;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-  gap:14px;
-}
-
-.card{
-  background:var(--card);
-  border-radius:16px;
-  overflow:hidden;
-  cursor:pointer;
-  transition:.2s;
-}
-.card:hover{transform:translateY(-3px)}
-
-.card img{
-  width:100%;
-  height:200px;
-  object-fit:cover;
-}
-
-.card .box{
-  padding:10px;
-  font-size:13px;
-}
-.card .box b{display:block;margin-bottom:4px}
-
-.badge{
-  display:inline-block;
-  font-size:11px;
-  padding:3px 8px;
-  border-radius:999px;
-  background:#1f2937;
-  color:var(--muted);
-}
+.episodio span{text-align:center;font-weight:700}
+.episodio button{background:var(--danger);padding:8px}
 
 /* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.85);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:999;
-}
-
-.modal-box{
-  width:760px;
-  max-height:90vh;
-  background:var(--panel);
-  border-radius:22px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-}
-
-.modal-header{
-  display:flex;
-  gap:16px;
-  padding:16px;
-  border-bottom:1px solid var(--border);
-}
-
-.modal-header img{
-  width:90px;
-  height:130px;
-  object-fit:cover;
-  border-radius:12px;
-}
-
-.modal-body{
-  padding:16px;
-  overflow:auto;
-}
-
-.kv{
-  font-size:13px;
-  margin:4px 0;
-}
-.kv b{color:#fff}
-
-.modal-actions{
-  display:flex;
-  gap:10px;
-  padding:16px;
-  border-top:1px solid var(--border);
-}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:999}
+.modal-box{width:700px;max-height:90vh;background:var(--panel);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.modal-header{display:flex;gap:14px;padding:14px}
+.modal-header img{width:90px;height:130px;object-fit:cover;border-radius:10px}
+.modal-body{padding:14px;overflow:auto}
+.modal-actions{display:flex;gap:10px;margin-top:14px}
+.modal-actions .danger{background:var(--danger)}
+.modal-actions .secondary{background:#1f2937}
 </style>
 </head>
 
 <body>
 
-<div class="wrapper">
-
-<!-- CADASTRO -->
-<div class="panel">
-  <h3>Novo Conteúdo</h3>
-
-  <textarea id="rawInfo" placeholder="Cole todas as informações do filme"></textarea>
-  <button onclick="analisarTexto()">Analisar texto</button>
-
-  <input id="titulo" placeholder="Título">
-  <textarea id="descricao" placeholder="Sinopse"></textarea>
-
-  <input id="categoria" placeholder="Gêneros (Fantasia, Romance)">
-  <input id="classificacao_indicativa" placeholder="Classificação (14 Anos)">
-  <input id="ano_lancamento" placeholder="Ano">
-  <input id="idioma" placeholder="Idioma">
-  <input id="audio" placeholder="Áudio">
-  <input id="nota_critica" placeholder="Nota da crítica">
-
-  <label>Capa</label>
-  <input type="file" id="capaFile" accept="image/*">
-
-  <select id="tipo">
-    <option value="filme">Filme</option>
-    <option value="serie">Série</option>
-  </select>
-
-  <input id="videoFilme" placeholder="ID do vídeo">
-
-  <button onclick="salvarNovo()">Salvar</button>
-</div>
-
-<!-- LISTA -->
-<div class="panel">
-  <div id="lista" class="grid"></div>
-</div>
-
-</div>
-
-<!-- MODAL -->
-<div id="modal" class="modal" onclick="fecharModal()">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <img id="mCapa">
-      <div>
-        <h3 id="mTitulo"></h3>
-        <span class="badge" id="mTipo"></span>
-      </div>
-    </div>
-
-    <div class="modal-body">
-      <p id="mDescricao"></p>
-
-      <h4>Informações</h4>
-      <div class="kv"><b>Gêneros:</b> <span id="mGenero"></span></div>
-      <div class="kv"><b>Classificação:</b> <span id="mClassificacao"></span></div>
-      <div class="kv"><b>Ano:</b> <span id="mAno"></span></div>
-      <div class="kv"><b>Idioma:</b> <span id="mIdioma"></span></div>
-      <div class="kv"><b>Áudio:</b> <span id="mAudio"></span></div>
-      <div class="kv"><b>Nota:</b> <span id="mNota"></span></div>
-      <div class="kv"><b>Duração:</b> <span id="mDuracao"></span></div>
-      <div class="kv"><b>ID do vídeo:</b> <span id="mVideo"></span></div>
-
-      <h4>Texto bruto</h4>
-      <pre id="mRaw" style="white-space:pre-wrap;font-size:12px;color:var(--muted)"></pre>
-    </div>
-
-    <div class="modal-actions">
-      <button class="secondary" onclick="fecharModal()">Fechar</button>
-    </div>
-  </div>
-</div>
-
 <script>
-/* ===== SUPABASE ===== */
 const supabaseClient = supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-const lista = document.getElementById("lista");
-let registros = [], atual = null;
+const BUNNY_STORAGE_ZONE="sessao99";
+const BUNNY_API_KEY="d498d56e-361b-4a1e-9edb9eb63e3b-2e6a-4c17";
+const BUNNY_STORAGE_HOST="https://br.storage.bunnycdn.com";
+const BUNNY_CDN_URL="https://sessao99.b-cdn.net";
 
-function limparTitulo(t){
-  return t.replace(/download|torrent/ig,"").replace(/\s{2,}/g," ").trim();
+async function uploadCapa(file){
+  if(!file) return "";
+  const ext=file.name.split(".").pop();
+  const name=`${Date.now()}_${crypto.randomUUID()}.${ext}`;
+  const url=`${BUNNY_STORAGE_HOST}/${BUNNY_STORAGE_ZONE}/capas/${name}`;
+  await fetch(url,{method:"PUT",headers:{AccessKey:BUNNY_API_KEY,"Content-Type":file.type},body:file});
+  return `${BUNNY_CDN_URL}/capas/${name}`;
 }
 
+let registros=[], atual=null, duracaoMin=null;
+</script>
+
+<div class="wrapper">
+
+<!-- CADASTRO -->
+<div class="panel">
+<h3>Novo Conteúdo</h3>
+
+<textarea id="rawInfo" placeholder="Cole todas as informações"></textarea>
+<button onclick="analisarTexto()">Analisar texto</button>
+
+<input id="titulo" placeholder="Título">
+<textarea id="descricao" placeholder="Sinopse"></textarea>
+<input id="categoria" placeholder="Gêneros">
+<input id="ano_lancamento" placeholder="Ano">
+<input id="idioma" placeholder="Idioma">
+<input id="audio" placeholder="Áudio">
+<input id="classificacao" placeholder="Classificação">
+<input id="nota_critica" placeholder="Nota da crítica">
+
+<label>Capa</label>
+<input type="file" id="capaFile">
+
+<select id="tipo" onchange="toggleTipo()">
+<option value="filme">Filme</option>
+<option value="serie">Série</option>
+</select>
+
+<div id="boxFilme">
+<input id="videoFilme" placeholder="ID do vídeo">
+</div>
+
+<div id="boxSerie" style="display:none">
+<input type="number" id="temporadaNova" value="1">
+<div id="epsNovo"></div>
+<button onclick="addEpisodio()">➕ Episódio</button>
+</div>
+
+<button onclick="salvarNovo()">Salvar</button>
+</div>
+
+<!-- LISTA -->
+<div class="panel">
+<div id="lista" class="grid"></div>
+</div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+<div class="modal-box">
+
+<div class="modal-header">
+<img id="mCapa">
+<div style="flex:1">
+<textarea id="mRaw" placeholder="Cole texto e analise"></textarea>
+<button onclick="analisarTextoModal()">Analisar texto</button>
+</div>
+</div>
+
+<div class="modal-body">
+<input id="mTitulo">
+<textarea id="mDescricao"></textarea>
+<input id="mCategoria">
+<input id="mAno">
+<input id="mIdioma">
+<input id="mAudio">
+<input id="mClassificacao">
+<input id="mNota">
+</div>
+
+<div class="modal-actions">
+<button onclick="salvarEdicao()">Salvar</button>
+<button class="secondary" onclick="fecharModal()">Cancelar</button>
+</div>
+
+</div>
+</div>
+
+<script>
+function getVal(raw, r){const m=raw.match(r);return m?m[1].trim():""}
+
 function analisarTexto(){
-  const raw = rawInfo.value;
-  if(!raw.trim()) return;
+  const raw=rawInfo.value;
+  titulo.value=raw.split("\n").find(l=>l.trim())||"";
+  descricao.value=getVal(raw,/Sinopse:\s*([\s\S]+)/i);
+  categoria.value=getVal(raw,/G[eê]neros:\s*(.+)/i);
+  ano_lancamento.value=getVal(raw,/Lan[cç]amento:\s*(\d{4})/i);
+  idioma.value=getVal(raw,/Idioma:\s*(.+)/i);
+  audio.value=getVal(raw,/(Dublado\s*\/\s*Dual Áudio|Dublado|Dual Áudio)/i);
+  classificacao.value=getVal(raw,/Classifica[cç][aã]o:\s*(.+)/i);
+  nota_critica.value=getVal(raw,/Nota da Cr[ií]tica:\s*([\d.]+)/i);
+}
 
-  const get = r => (raw.match(r)||[])[1] || "";
-
-  titulo.value = limparTitulo(raw.split("\n")[0]);
-  descricao.value = get(/Sinopse:\s*([\s\S]+)/i);
-  categoria.value = get(/G[eê]neros:\s*(.+)/i);
-  classificacao_indicativa.value = get(/Classifica[cç][aã]o:\s*(.+)/i);
-  ano_lancamento.value = get(/Lan[cç]amento:\s*(\d{4})/i);
-  idioma.value = get(/Idioma:\s*(.+)/i);
-  audio.value = get(/Áudio:\s*(.+)/i);
-  nota_critica.value = get(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
+function analisarTextoModal(){
+  const raw=mRaw.value;
+  mTitulo.value=raw.split("\n").find(l=>l.trim())||"";
+  mDescricao.value=getVal(raw,/Sinopse:\s*([\s\S]+)/i);
+  mCategoria.value=getVal(raw,/G[eê]neros:\s*(.+)/i);
+  mAno.value=getVal(raw,/Lan[cç]amento:\s*(\d{4})/i);
+  mIdioma.value=getVal(raw,/Idioma:\s*(.+)/i);
+  mAudio.value=getVal(raw,/(Dublado\s*\/\s*Dual Áudio|Dublado|Dual Áudio)/i);
+  mClassificacao.value=getVal(raw,/Classifica[cç][aã]o:\s*(.+)/i);
+  mNota.value=getVal(raw,/Nota da Cr[ií]tica:\s*([\d.]+)/i);
 }
 
 async function salvarNovo(){
-  const { error } = await supabaseClient.from("filmes").insert({
-    titulo: titulo.value,
-    descricao: descricao.value,
-    categoria: categoria.value,
-    classificacao_indicativa: classificacao_indicativa.value,
-    ano_lancamento: Number(ano_lancamento.value) || null,
-    idioma: idioma.value,
-    audio: audio.value,
-    nota_critica: Number(nota_critica.value) || null,
-    tipo: tipo.value,
-    video_url: videoFilme.value,
-    raw_info: rawInfo.value,
-    ativo: true
-  });
+  let capa="";
+  if(capaFile.files.length) capa=await uploadCapa(capaFile.files[0]);
 
-  if(error){
-    alert(error.message);
-    return;
-  }
+  await supabaseClient.from("filmes").insert({
+    titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
+    ano_lancamento:ano_lancamento.value,idioma:idioma.value,audio:audio.value,
+    classificacao:classificacao.value,nota_critica:nota_critica.value,
+    tipo:tipo.value,video_url:videoFilme.value,
+    capa_url:capa,raw_info:rawInfo.value,ativo:true
+  });
   carregar();
 }
 
 async function carregar(){
-  const { data } = await supabaseClient
-    .from("filmes")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  registros = data || [];
-  lista.innerHTML = "";
-
+  const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
+  registros=data||[];
+  lista.innerHTML="";
   registros.forEach(r=>{
-    const d = document.createElement("div");
-    d.className = "card";
-    d.ondblclick = () => abrirModal(r);
-    d.innerHTML = `
-      <img src="${r.capa_url || ''}">
-      <div class="box">
-        <b>${r.titulo}</b>
-        <span class="badge">${r.tipo}</span>
-      </div>
-    `;
+    const d=document.createElement("div");
+    d.className="card";
+    d.ondblclick=()=>abrirModal(r);
+    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box"><b>${r.titulo}</b></div>`;
     lista.appendChild(d);
   });
 }
 
 function abrirModal(r){
-  atual = r;
-  modal.style.display = "flex";
-  mCapa.src = r.capa_url || "";
-  mTitulo.textContent = r.titulo;
-  mTipo.textContent = r.tipo;
-  mDescricao.textContent = r.descricao || "";
-  mGenero.textContent = r.categoria || "-";
-  mClassificacao.textContent = r.classificacao_indicativa || "-";
-  mAno.textContent = r.ano_lancamento || "-";
-  mIdioma.textContent = r.idioma || "-";
-  mAudio.textContent = r.audio || "-";
-  mNota.textContent = r.nota_critica || "-";
-  mDuracao.textContent = r.duracao_minutos ? r.duracao_minutos+" min" : "-";
-  mVideo.textContent = r.video_url || "-";
-  mRaw.textContent = r.raw_info || "-";
+  atual=r;
+  modal.style.display="flex";
+  mCapa.src=r.capa_url||"";
+  mTitulo.value=r.titulo;
+  mDescricao.value=r.descricao||"";
+  mCategoria.value=r.categoria||"";
+  mAno.value=r.ano_lancamento||"";
+  mIdioma.value=r.idioma||"";
+  mAudio.value=r.audio||"";
+  mClassificacao.value=r.classificacao||"";
+  mNota.value=r.nota_critica||"";
+  mRaw.value=r.raw_info||"";
 }
 
-function fecharModal(){
-  modal.style.display = "none";
+async function salvarEdicao(){
+  await supabaseClient.from("filmes").update({
+    titulo:mTitulo.value,descricao:mDescricao.value,categoria:mCategoria.value,
+    ano_lancamento:mAno.value,idioma:mIdioma.value,audio:mAudio.value,
+    classificacao:mClassificacao.value,nota_critica:mNota.value,
+    raw_info:mRaw.value
+  }).eq("id",atual.id);
+  fecharModal();carregar();
 }
 
-document.addEventListener("DOMContentLoaded", carregar);
+function fecharModal(){modal.style.display="none"}
+
+function toggleTipo(){
+  boxFilme.style.display=tipo.value==="filme"?"block":"none";
+  boxSerie.style.display=tipo.value==="serie"?"block":"none";
+}
+
+carregar();
 </script>
 
 </body>
