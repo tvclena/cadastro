@@ -2,121 +2,170 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Terror 24h • Ao Vivo</title>
+<title>📺 Canal Ao Vivo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- HLS -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
 html,body{
   margin:0;
-  background:black;
+  background:#000;
+  color:#fff;
+  width:100%;
   height:100%;
   overflow:hidden;
+  font-family:Inter,system-ui;
 }
-video{
+#player{
   width:100vw;
   height:100vh;
-  object-fit:cover;
-  background:black;
+  background:#000;
 }
-.overlay{
+.top{
   position:absolute;
-  top:16px;
-  left:16px;
-  color:white;
-  font-family:Inter,system-ui;
-  font-size:18px;
-  opacity:.85;
+  top:12px;
+  left:12px;
   z-index:10;
+  background:rgba(0,0,0,.6);
+  padding:8px 14px;
+  border-radius:10px;
+  font-weight:600;
+}
+.live{
+  color:#ff3b3b;
+  margin-right:6px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="overlay">🔴 Terror 24h • AO VIVO</div>
-<video id="player" autoplay muted playsinline></video>
+<div class="top">
+  <span class="live">● AO VIVO</span>
+  <span id="canalNome">Canal</span>
+</div>
+
+<video
+  id="player"
+  autoplay
+  muted
+  playsinline
+  preload="auto"
+  disablepictureinpicture
+  controlslist="nodownload nofullscreen noremoteplayback">
+</video>
 
 <script>
-/* ===================== */
-/* SUPABASE (NOME SEGURO) */
-/* ===================== */
-const db = window.supabase.createClient(
-  "https://dxkszikemntfusfyrzos.supabase.co",
-  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+/* ==========================
+   CONFIGURAÇÃO
+========================== */
+
+// 🔴 TROQUE AQUI
+const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
+const SUPABASE_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
+
+// 🔴 TROQUE PELO SEU PULL ZONE
+const BUNNY_PULL = "vz-XXXXXX"; // ex: vz-9f3a2e
+
+// 🔴 CANAL ATUAL
+const CANAL = "Terror 24h";
+
+/* ==========================
+   SUPABASE
+========================== */
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
 );
 
-const CANAL = "Terror 24h";
 const player = document.getElementById("player");
+document.getElementById("canalNome").innerText = CANAL;
 
-/* ===================== */
-/* TEMPO ATUAL EM MINUTOS */
-/* ===================== */
-function agoraMin(){
+let hls;
+
+/* ==========================
+   HELPERS
+========================== */
+function minutoAgora(){
   const d = new Date();
-  return d.getHours() * 60 + d.getMinutes();
+  return d.getHours()*60 + d.getMinutes();
 }
 
-/* ===================== */
-/* AO VIVO */
-/* ===================== */
-async function carregarAoVivo(){
-  const hoje = new Date().toISOString().split("T")[0];
-  const agora = agoraMin();
+function dataHoje(){
+  return new Date().toISOString().split("T")[0];
+}
 
-  const { data, error } = await db
+/* ==========================
+   PLAYER
+========================== */
+function tocarVideo(videoId){
+  const url = `https://${BUNNY_PULL}.b-cdn.net/${videoId}/play.m3u8`;
+
+  if(hls){
+    hls.destroy();
+    hls = null;
+  }
+
+  if(Hls.isSupported()){
+    hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(player);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      player.play().catch(()=>{});
+    });
+  } else {
+    player.src = url;
+    player.play().catch(()=>{});
+  }
+}
+
+/* ==========================
+   BUSCAR PROGRAMAÇÃO ATUAL
+========================== */
+async function carregarAoVivo(){
+  const minuto = minutoAgora();
+  const hoje = dataHoje();
+
+  const { data, error } = await supabase
     .from("programacao")
-    .select("*, filmes(*)")
+    .select(`
+      inicio_minuto,
+      duracao_minutos,
+      filmes (
+        titulo,
+        video_url
+      )
+    `)
     .eq("canal", CANAL)
     .eq("data", hoje)
-    .order("inicio_minuto");
+    .lte("inicio_minuto", minuto)
+    .order("inicio_minuto", { ascending:false })
+    .limit(1);
 
-  if(error){
-    console.error("Erro Supabase:", error);
-    return;
-  }
+  if(error || !data || !data.length) return;
 
-  if(!data || !data.length){
-    console.warn("Sem programação hoje");
-    return;
-  }
+  const item = data[0];
+  const fim = item.inicio_minuto + item.duracao_minutos;
 
-  const atual = data.find(p =>
-    agora >= p.inicio_minuto &&
-    agora < (p.inicio_minuto + p.duracao_minutos)
-  );
+  if(minuto >= fim) return;
 
-  if(!atual){
-    console.warn("Nada ao vivo neste horário");
-    return;
-  }
+  tocarVideo(item.filmes.video_url);
 
-  const segundos = (agora - atual.inicio_minuto) * 60;
-  tocar(atual, data, segundos);
+  // agenda troca automática
+  const segundosRestantes = (fim - minuto) * 60;
+  setTimeout(carregarAoVivo, segundosRestantes * 1000 + 1000);
 }
 
-/* ===================== */
-/* PLAYER */
-/* ===================== */
-function tocar(item, lista, start){
-  player.src = item.filmes.video_url;
-  player.currentTime = start;
-  player.muted = true;
-  player.play();
-
-  player.onended = () => {
-    const idx = lista.findIndex(i => i.id === item.id);
-    const prox = lista[idx + 1];
-    if(prox){
-      tocar(prox, lista, 0);
-    } else {
-      setTimeout(carregarAoVivo, 3000);
-    }
-  };
-}
-
+/* ==========================
+   START
+========================== */
 carregarAoVivo();
+setInterval(carregarAoVivo, 60000); // segurança
 </script>
 
 </body>
