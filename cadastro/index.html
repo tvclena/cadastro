@@ -2,46 +2,100 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>CLENA TV • Painel</title>
+<title>CLENA TV • Cadastro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
 :root{
-  --panel:#0f1424;--card:#151a30;--input:#0b1020;
-  --accent:#dc2626;--danger:#7f1d1d;--text:#e5e7eb;
+  --bg:#ffffff;
+  --panel:#f5f5f5;
+  --card:#ffffff;
+  --border:#d1d5db;
+  --text:#000000;
+  --accent:#dc2626;
 }
+
 *{box-sizing:border-box}
-body{margin:0;background:#05060c;color:var(--text);font-family:Inter,Arial}
-.wrapper{height:100vh;padding:16px;display:grid;grid-template-columns:360px 1fr;gap:16px}
-.panel{background:var(--panel);border-radius:16px;padding:16px;display:flex;flex-direction:column}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,Arial;
+}
+
+.wrapper{
+  height:100vh;
+  padding:16px;
+  display:grid;
+  grid-template-columns:380px 1fr;
+  gap:16px;
+}
+
+.panel{
+  background:var(--panel);
+  border-radius:14px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+}
+
+h3{margin:0 0 12px}
+
+label{
+  font-size:13px;
+  font-weight:600;
+  margin-top:10px;
+}
+
 input,textarea,select{
-  width:100%;margin-top:6px;padding:10px;border-radius:10px;
-  border:none;background:var(--input);color:#fff
+  width:100%;
+  margin-top:4px;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#fff;
+  color:#000;
 }
-button{margin-top:12px;padding:12px;border:none;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer}
-.grid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
-.card{background:var(--card);border-radius:12px;overflow:hidden;cursor:pointer}
-.card img{width:100%;height:180px;object-fit:cover}
-.card .box{padding:8px;font-size:13px}
 
-.episodio{
-  background:#0b1020;border-radius:12px;padding:10px;margin-top:10px;
-  display:grid;grid-template-columns:60px 1fr auto;gap:6px;align-items:center
+textarea{resize:vertical}
+
+button{
+  margin-top:14px;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:var(--accent);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
 }
-.episodio span{text-align:center;font-weight:700}
-.episodio button{background:var(--danger);padding:8px}
 
-/* MODAL */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:999}
-.modal-box{width:700px;max-height:90vh;background:var(--panel);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
-.modal-header{display:flex;gap:14px;padding:14px}
-.modal-header img{width:90px;height:130px;object-fit:cover;border-radius:10px}
-.modal-body{padding:14px;overflow:auto}
-.modal-actions{display:flex;gap:10px;margin-top:14px}
-.modal-actions .danger{background:var(--danger)}
-.modal-actions .secondary{background:#1f2937}
+.grid{
+  flex:1;
+  overflow:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:14px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);
+  cursor:pointer;
+}
+.card img{
+  width:100%;
+  height:200px;
+  object-fit:cover;
+}
+.card .box{
+  padding:10px;
+  font-size:14px;
+  font-weight:600;
+}
 </style>
 </head>
 
@@ -53,187 +107,113 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-const BUNNY_STORAGE_ZONE="sessao99";
-const BUNNY_API_KEY="d498d56e-361b-4a1e-9edb9eb63e3b-2e6a-4c17";
-const BUNNY_STORAGE_HOST="https://br.storage.bunnycdn.com";
-const BUNNY_CDN_URL="https://sessao99.b-cdn.net";
-
-async function uploadCapa(file){
-  if(!file) return "";
-  const ext=file.name.split(".").pop();
-  const name=`${Date.now()}_${crypto.randomUUID()}.${ext}`;
-  const url=`${BUNNY_STORAGE_HOST}/${BUNNY_STORAGE_ZONE}/capas/${name}`;
-  await fetch(url,{method:"PUT",headers:{AccessKey:BUNNY_API_KEY,"Content-Type":file.type},body:file});
-  return `${BUNNY_CDN_URL}/capas/${name}`;
+function limparTitulo(txt){
+  return txt.replace(/download/ig,"").replace(/torrent/ig,"").replace(/\s{2,}/g," ").trim();
 }
-
-let registros=[], atual=null, duracaoMin=null;
 </script>
 
 <div class="wrapper">
 
 <!-- CADASTRO -->
 <div class="panel">
-<h3>Novo Conteúdo</h3>
+  <h3>Novo Conteúdo</h3>
 
-<textarea id="rawInfo" placeholder="Cole todas as informações"></textarea>
-<button onclick="analisarTexto()">Analisar texto</button>
+  <label>Texto para análise</label>
+  <textarea id="rawInfo"></textarea>
+  <button onclick="analisarTexto()">Analisar texto</button>
 
-<input id="titulo" placeholder="Título">
-<textarea id="descricao" placeholder="Sinopse"></textarea>
-<input id="categoria" placeholder="Gêneros">
-<input id="ano_lancamento" placeholder="Ano">
-<input id="idioma" placeholder="Idioma">
-<input id="audio" placeholder="Áudio">
-<input id="classificacao" placeholder="Classificação">
-<input id="nota_critica" placeholder="Nota da crítica">
+  <label>Nome</label>
+  <input id="titulo">
 
-<label>Capa</label>
-<input type="file" id="capaFile">
+  <label>Sinopse</label>
+  <textarea id="descricao"></textarea>
 
-<select id="tipo" onchange="toggleTipo()">
-<option value="filme">Filme</option>
-<option value="serie">Série</option>
-</select>
+  <label>Categoria (gêneros)</label>
+  <input id="categoria">
 
-<div id="boxFilme">
-<input id="videoFilme" placeholder="ID do vídeo">
-</div>
+  <label>Classificação indicativa</label>
+  <input id="classificacao">
 
-<div id="boxSerie" style="display:none">
-<input type="number" id="temporadaNova" value="1">
-<div id="epsNovo"></div>
-<button onclick="addEpisodio()">➕ Episódio</button>
-</div>
+  <label>Ano</label>
+  <input id="ano">
 
-<button onclick="salvarNovo()">Salvar</button>
+  <label>Idioma</label>
+  <input id="idioma">
+
+  <label>Áudio</label>
+  <input id="audio">
+
+  <label>Nota da crítica</label>
+  <input id="nota">
+
+  <label>Capa</label>
+  <input type="file" id="capaFile">
+
+  <label>Tipo</label>
+  <select id="tipo">
+    <option value="filme">Filme</option>
+    <option value="serie">Série</option>
+  </select>
+
+  <label>ID do vídeo</label>
+  <input id="video">
+
+  <button onclick="salvar()">Salvar</button>
 </div>
 
 <!-- LISTA -->
 <div class="panel">
-<div id="lista" class="grid"></div>
+  <div id="lista" class="grid"></div>
 </div>
 
-</div>
-
-<!-- MODAL -->
-<div id="modal" class="modal">
-<div class="modal-box">
-
-<div class="modal-header">
-<img id="mCapa">
-<div style="flex:1">
-<textarea id="mRaw" placeholder="Cole texto e analise"></textarea>
-<button onclick="analisarTextoModal()">Analisar texto</button>
-</div>
-</div>
-
-<div class="modal-body">
-<input id="mTitulo">
-<textarea id="mDescricao"></textarea>
-<input id="mCategoria">
-<input id="mAno">
-<input id="mIdioma">
-<input id="mAudio">
-<input id="mClassificacao">
-<input id="mNota">
-</div>
-
-<div class="modal-actions">
-<button onclick="salvarEdicao()">Salvar</button>
-<button class="secondary" onclick="fecharModal()">Cancelar</button>
-</div>
-
-</div>
 </div>
 
 <script>
-function getVal(raw, r){const m=raw.match(r);return m?m[1].trim():""}
-
 function analisarTexto(){
   const raw=rawInfo.value;
-  titulo.value=raw.split("\n").find(l=>l.trim())||"";
-  descricao.value=getVal(raw,/Sinopse:\s*([\s\S]+)/i);
-  categoria.value=getVal(raw,/G[eê]neros:\s*(.+)/i);
-  ano_lancamento.value=getVal(raw,/Lan[cç]amento:\s*(\d{4})/i);
-  idioma.value=getVal(raw,/Idioma:\s*(.+)/i);
-  audio.value=getVal(raw,/(Dublado\s*\/\s*Dual Áudio|Dublado|Dual Áudio)/i);
-  classificacao.value=getVal(raw,/Classifica[cç][aã]o:\s*(.+)/i);
-  nota_critica.value=getVal(raw,/Nota da Cr[ií]tica:\s*([\d.]+)/i);
+  if(!raw.trim()) return;
+
+  const get=r=>{const m=raw.match(r);return m?m[1]:""};
+
+  titulo.value = limparTitulo(raw.split("\n").find(l=>l.trim())||"");
+  descricao.value = get(/Sinopse:\s*([\s\S]+)/i);
+  categoria.value = get(/G[eê]neros:\s*(.+)/i);
+  classificacao.value = get(/Classifica[cç][aã]o:\s*(.+)/i);
+  ano.value = get(/Lan[cç]amento:\s*(\d{4})/i);
+  idioma.value = get(/Idioma:\s*(.+)/i);
+  audio.value = get(/(Dublado\s*\/\s*Dual Áudio|Dublado|Dual Áudio)/i);
+  nota.value = get(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
 }
 
-function analisarTextoModal(){
-  const raw=mRaw.value;
-  mTitulo.value=raw.split("\n").find(l=>l.trim())||"";
-  mDescricao.value=getVal(raw,/Sinopse:\s*([\s\S]+)/i);
-  mCategoria.value=getVal(raw,/G[eê]neros:\s*(.+)/i);
-  mAno.value=getVal(raw,/Lan[cç]amento:\s*(\d{4})/i);
-  mIdioma.value=getVal(raw,/Idioma:\s*(.+)/i);
-  mAudio.value=getVal(raw,/(Dublado\s*\/\s*Dual Áudio|Dublado|Dual Áudio)/i);
-  mClassificacao.value=getVal(raw,/Classifica[cç][aã]o:\s*(.+)/i);
-  mNota.value=getVal(raw,/Nota da Cr[ií]tica:\s*([\d.]+)/i);
-}
-
-async function salvarNovo(){
-  let capa="";
-  if(capaFile.files.length) capa=await uploadCapa(capaFile.files[0]);
-
+async function salvar(){
   await supabaseClient.from("filmes").insert({
-    titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
-    ano_lancamento:ano_lancamento.value,idioma:idioma.value,audio:audio.value,
-    classificacao:classificacao.value,nota_critica:nota_critica.value,
-    tipo:tipo.value,video_url:videoFilme.value,
-    capa_url:capa,raw_info:rawInfo.value,ativo:true
+    titulo:titulo.value,
+    descricao:descricao.value,
+    categoria:categoria.value,
+    classificacao_indicativa:classificacao.value,
+    ano_lancamento:Number(ano.value)||null,
+    idioma:idioma.value,
+    audio:audio.value,
+    nota_critica:Number(nota.value)||null,
+    video_url:video.value,
+    raw_info:rawInfo.value,
+    ativo:true
   });
   carregar();
 }
 
 async function carregar(){
   const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
-  registros=data||[];
   lista.innerHTML="";
-  registros.forEach(r=>{
+  (data||[]).forEach(r=>{
     const d=document.createElement("div");
     d.className="card";
-    d.ondblclick=()=>abrirModal(r);
-    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box"><b>${r.titulo}</b></div>`;
+    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box">${r.titulo}</div>`;
     lista.appendChild(d);
   });
 }
 
-function abrirModal(r){
-  atual=r;
-  modal.style.display="flex";
-  mCapa.src=r.capa_url||"";
-  mTitulo.value=r.titulo;
-  mDescricao.value=r.descricao||"";
-  mCategoria.value=r.categoria||"";
-  mAno.value=r.ano_lancamento||"";
-  mIdioma.value=r.idioma||"";
-  mAudio.value=r.audio||"";
-  mClassificacao.value=r.classificacao||"";
-  mNota.value=r.nota_critica||"";
-  mRaw.value=r.raw_info||"";
-}
-
-async function salvarEdicao(){
-  await supabaseClient.from("filmes").update({
-    titulo:mTitulo.value,descricao:mDescricao.value,categoria:mCategoria.value,
-    ano_lancamento:mAno.value,idioma:mIdioma.value,audio:mAudio.value,
-    classificacao:mClassificacao.value,nota_critica:mNota.value,
-    raw_info:mRaw.value
-  }).eq("id",atual.id);
-  fecharModal();carregar();
-}
-
-function fecharModal(){modal.style.display="none"}
-
-function toggleTipo(){
-  boxFilme.style.display=tipo.value==="filme"?"block":"none";
-  boxSerie.style.display=tipo.value==="serie"?"block":"none";
-}
-
-carregar();
+document.addEventListener("DOMContentLoaded",carregar);
 </script>
 
 </body>
