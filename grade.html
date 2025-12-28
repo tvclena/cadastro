@@ -16,7 +16,6 @@
   --text:#fff;
   --muted:#9aa4b2;
 }
-
 *{box-sizing:border-box;font-family:Inter,system-ui}
 body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#fff;overflow:hidden}
 
@@ -46,16 +45,13 @@ body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#f
   padding:10px 0;border-left:1px solid var(--line);
   color:var(--muted);font-size:13px
 }
-
-.row{
-  position:relative;height:90px;border-bottom:1px solid var(--line)
-}
+.row{position:relative;height:90px;border-bottom:1px solid var(--line)}
 
 /* BLOCO */
 .block{
   position:absolute;top:12px;height:66px;border-radius:12px;
   padding:6px 8px;background:var(--content);
-  color:#000;font-size:12px;cursor:grab
+  color:#000;font-size:12px;cursor:grab;overflow:hidden
 }
 .block img{
   width:36px;height:52px;border-radius:6px;
@@ -68,7 +64,7 @@ body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#f
   display:none;align-items:center;justify-content:center;z-index:99
 }
 .modal-box{
-  width:700px;max-height:80vh;background:#0e1422;
+  width:760px;max-height:80vh;background:#0e1422;
   border-radius:16px;padding:16px;display:flex;flex-direction:column
 }
 .modal-header{display:flex;gap:8px;margin-bottom:12px}
@@ -97,7 +93,6 @@ body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#f
 
 <div class="wrapper">
   <div class="channels" id="channels"></div>
-
   <div class="grid">
     <div class="time-header" id="timeHeader"></div>
     <div id="rows"></div>
@@ -109,22 +104,33 @@ body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#f
   <div class="modal-box">
     <div class="modal-header">
       <input id="filtroNome" placeholder="Buscar conteúdo">
-      <select id="filtroCategoria">
-        <option value="">Todas categorias</option>
-      </select>
+      <select id="filtroCategoria"></select>
     </div>
     <div class="modal-list" id="modalList"></div>
   </div>
 </div>
 
 <script>
+/* SUPABASE */
 const db = window.supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-const DAY=1440;
-let canalSelecionado=null;
+const DAY = 1440;
+let canalSelecionado = null;
+let filmesCache = [];
+
+/* HELPERS */
+function minToTime(min){
+  const h=Math.floor(min/60);
+  const m=min%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
+}
+function timeToMin(t){
+  const [h,m]=t.split(":").map(Number);
+  return h*60+m;
+}
 
 /* TIME HEADER */
 const th=document.getElementById("timeHeader");
@@ -132,9 +138,10 @@ for(let h=0;h<24;h++){
   th.innerHTML+=`<div class="time">${String(h).padStart(2,"0")}:00</div>`;
 }
 
-/* LOAD */
+/* LOAD BASE */
 async function load(){
   const data=document.getElementById("data").value;
+
   const {data:canais}=await db.from("canais").select("*").order("ordem");
   const ch=document.getElementById("channels");
   const rows=document.getElementById("rows");
@@ -145,16 +152,19 @@ async function load(){
     el.className="channel";
     el.innerText=c.nome;
     el.onclick=()=>selectCanal(c.id,el);
-    el.ondblclick=()=>openModal();
+    el.ondblclick=openModal;
     ch.appendChild(el);
-
     rows.innerHTML+=`<div class="row" data-canal="${c.id}"></div>`;
   });
 
+  const {data:filmes}=await db.from("filmes").select("*").eq("ativo",true);
+  filmesCache = filmes;
+
+  popularCategorias();
   renderProgramacao(data);
 }
 
-/* SELECT */
+/* SELECT CANAL */
 function selectCanal(id,el){
   canalSelecionado=id;
   document.querySelectorAll(".channel").forEach(c=>c.classList.remove("selected"));
@@ -163,14 +173,21 @@ function selectCanal(id,el){
 
 /* PROGRAMACAO */
 async function renderProgramacao(data){
-  const {data:prog}=await db.from("programacao").select("*,filmes(*)").eq("data",data);
+  const {data:prog}=await db
+    .from("programacao")
+    .select("*,filmes(*)")
+    .eq("data",data);
+
   document.querySelectorAll(".row").forEach(row=>{
+    row.innerHTML="";
     const canal=row.dataset.canal;
     prog.filter(p=>p.canal_id===canal).forEach(p=>{
+      const ini=timeToMin(p.hora_inicio);
+      const fim=timeToMin(p.hora_fim);
       const b=document.createElement("div");
       b.className="block";
-      b.style.left=(p.inicio_minuto/DAY)*100+"%";
-      b.style.width=((p.fim_minuto-p.inicio_minuto)/DAY)*100+"%";
+      b.style.left=(ini/DAY)*100+"%";
+      b.style.width=((fim-ini)/DAY)*100+"%";
       b.innerHTML=`
         <img src="${p.filmes?.capa_url}">
         <b>${p.filmes?.titulo}</b>
@@ -181,53 +198,74 @@ async function renderProgramacao(data){
 }
 
 /* MODAL */
-async function openModal(){
-  if(!canalSelecionado) return alert("Selecione um canal primeiro");
+function openModal(){
+  if(!canalSelecionado) return alert("Selecione um canal");
   document.getElementById("modal").style.display="flex";
+  aplicarFiltro();
+}
 
-  const {data:filmes}=await db.from("filmes").select("*").eq("ativo",true);
+/* CATEGORIAS */
+function popularCategorias(){
+  const sel=document.getElementById("filtroCategoria");
+  const cats=[...new Set(filmesCache.map(f=>f.categoria).filter(Boolean))];
+  sel.innerHTML='<option value="">Todas categorias</option>';
+  cats.forEach(c=>sel.innerHTML+=`<option>${c}</option>`);
+}
+
+/* FILTRO */
+function aplicarFiltro(){
+  const nome=document.getElementById("filtroNome").value.toLowerCase();
+  const cat=document.getElementById("filtroCategoria").value;
   const list=document.getElementById("modalList");
   list.innerHTML="";
 
-  filmes.forEach(f=>{
-    const div=document.createElement("div");
-    div.className="modal-item";
-    div.ondblclick=()=>addConteudo(f);
-    div.innerHTML=`
-      <img src="${f.capa_url}">
-      <div>
-        <b>${f.titulo}</b>
-        <small>${f.categoria} • ${f.duracao_minutos||120} min</small>
-      </div>`;
-    list.appendChild(div);
-  });
+  filmesCache
+    .filter(f=>(!nome || f.titulo.toLowerCase().includes(nome)) &&
+               (!cat || f.categoria===cat))
+    .forEach(f=>{
+      const div=document.createElement("div");
+      div.className="modal-item";
+      div.ondblclick=()=>addConteudo(f);
+      div.innerHTML=`
+        <img src="${f.capa_url}">
+        <div>
+          <b>${f.titulo}</b>
+          <small>${f.categoria} • ${f.duracao_minutos||120} min</small>
+        </div>`;
+      list.appendChild(div);
+    });
 }
 
-/* ADD */
+/* ADD CONTEUDO */
 async function addConteudo(f){
   const data=document.getElementById("data").value;
+
   const {data:last}=await db.from("programacao")
     .select("*")
     .eq("canal_id",canalSelecionado)
     .eq("data",data)
-    .order("fim_minuto",{ascending:false})
+    .order("hora_fim",{ascending:false})
     .limit(1);
 
-  let inicio=last?.[0]?.fim_minuto||0;
-  let dur=f.duracao_minutos||120;
+  const inicio = last?.[0] ? timeToMin(last[0].hora_fim) : 0;
+  const dur = f.duracao_minutos || 120;
 
   await db.from("programacao").insert({
-    canal_id:canalSelecionado,
-    filme_id:f.id,
+    canal_id: canalSelecionado,
+    filme_id: f.id,
     data,
-    inicio_minuto:inicio,
-    fim_minuto:inicio+dur,
-    duracao_minutos:dur
+    hora_inicio: minToTime(inicio),
+    hora_fim: minToTime(inicio + dur),
+    duracao_minutos: dur
   });
 
   document.getElementById("modal").style.display="none";
   load();
 }
+
+/* EVENTS */
+document.getElementById("filtroNome").oninput=aplicarFiltro;
+document.getElementById("filtroCategoria").onchange=aplicarFiltro;
 
 /* INIT */
 document.getElementById("data").value=new Date().toISOString().split("T")[0];
