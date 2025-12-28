@@ -3,116 +3,184 @@
 <head>
 <meta charset="UTF-8" />
 <title>CLENA TV • AO VIVO</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+<!-- HLS -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+* { box-sizing: border-box; }
+
 html, body {
   margin: 0;
   padding: 0;
-  background: black;
   width: 100%;
   height: 100%;
+  background: black;
   overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 #player {
   width: 100vw;
   height: 100vh;
   object-fit: cover;
+  background: black;
 }
 
-#live {
+#overlay {
   position: fixed;
-  top: 15px;
-  left: 15px;
-  color: red;
-  font-weight: bold;
-  font-family: Arial;
-  z-index: 10;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+#dot {
+  width: 10px;
+  height: 10px;
+  background: red;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0.3; }
+}
+
+#info {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 20;
+  color: #fff;
+  font-size: 14px;
+  opacity: .9;
 }
 </style>
 </head>
 
 <body>
 
-<div id="live">🔴 AO VIVO • Terror 24h</div>
+<!-- INDICADOR AO VIVO -->
+<div id="overlay">
+  <div id="dot"></div>
+  <strong>AO VIVO • Terror 24h</strong>
+</div>
+
+<!-- INFO DO FILME -->
+<div id="info"></div>
+
+<!-- PLAYER -->
 <video id="player" autoplay muted playsinline></video>
 
 <script>
-// ============================
-// SUPABASE (UMA ÚNICA VEZ)
-// ============================
+/* =====================================================
+   CONFIGURAÇÃO SUPABASE (UMA ÚNICA VEZ)
+===================================================== */
+const SUPABASE_URL = "https://dxkszikemntfusfyrzos.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed";
+
 const supabase = supabaseJs.createClient(
-  "https://dxkszikemntfusfyrzos.supabase.co",
-  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 );
 
-// ============================
-// PLAYER
-// ============================
+/* =====================================================
+   PLAYER
+===================================================== */
 const video = document.getElementById("player");
-let hls;
+const info = document.getElementById("info");
+let hlsInstance = null;
+let videoAtual = null;
 
-// ============================
-// FUNÇÃO PRINCIPAL
-// ============================
-async function carregarAoVivo() {
-  const agora = new Date();
-  const dataHoje = agora.toISOString().slice(0,10);
-  const minutoAtual = agora.getHours() * 60 + agora.getMinutes();
+/* =====================================================
+   FUNÇÕES AUXILIARES
+===================================================== */
+function minutosAgora() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function dataHoje() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/* =====================================================
+   INICIAR PLAYER HLS
+===================================================== */
+function tocarVideo(url, titulo) {
+  if (videoAtual === url) return;
+  videoAtual = url;
+
+  info.innerText = titulo || "";
+
+  if (hlsInstance) {
+    hlsInstance.destroy();
+    hlsInstance = null;
+  }
+
+  if (Hls.isSupported()) {
+    hlsInstance = new Hls({
+      lowLatencyMode: true,
+      backBufferLength: 30
+    });
+    hlsInstance.loadSource(url);
+    hlsInstance.attachMedia(video);
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(()=>{});
+    });
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src = url;
+    video.play().catch(()=>{});
+  }
+}
+
+/* =====================================================
+   BUSCAR PROGRAMAÇÃO AO VIVO
+===================================================== */
+async function atualizarProgramacao() {
+  const agora = minutosAgora();
 
   const { data, error } = await supabase
     .from("programacao")
     .select(`
       inicio_minuto,
       duracao_minutos,
-      filmes ( titulo, video_url )
+      filmes (
+        titulo,
+        video_url
+      )
     `)
     .eq("canal", "Terror 24h")
-    .eq("data", dataHoje);
+    .eq("data", dataHoje());
 
   if (error || !data) {
-    console.error("Erro Supabase", error);
+    console.error("Erro Supabase:", error);
     return;
   }
 
   const atual = data.find(p =>
-    minutoAtual >= p.inicio_minuto &&
-    minutoAtual < p.inicio_minuto + p.duracao_minutos
+    agora >= p.inicio_minuto &&
+    agora < p.inicio_minuto + p.duracao_minutos
   );
 
-  if (!atual) return;
+  if (!atual || !atual.filmes || !atual.filmes.video_url) return;
 
-  iniciarPlayer(atual.filmes.video_url);
+  tocarVideo(atual.filmes.video_url, atual.filmes.titulo);
 }
 
-// ============================
-// INICIAR HLS
-// ============================
-function iniciarPlayer(url) {
-  if (hls) hls.destroy();
-
-  if (Hls.isSupported()) {
-    hls = new Hls();
-    hls.loadSource(url);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      video.play();
-    });
-  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-    video.src = url;
-    video.play();
-  }
-}
-
-// ============================
-// LOOP AO VIVO
-// ============================
-carregarAoVivo();
-setInterval(carregarAoVivo, 30000); // verifica a cada 30s
+/* =====================================================
+   LOOP AO VIVO
+===================================================== */
+atualizarProgramacao();
+setInterval(atualizarProgramacao, 30000); // verifica a cada 30s
 </script>
 
 </body>
