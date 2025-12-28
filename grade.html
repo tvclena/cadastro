@@ -12,383 +12,152 @@
   --panel:#0e1422;
   --line:#1f2a3d;
   --card:#1c2436;
-  --content:#2bbcff;
-  --text:#ffffff;
+  --primary:#2bbcff;
+  --text:#fff;
   --muted:#9aa4b2;
-  --hover:#23304a;
 }
-
 *{box-sizing:border-box;font-family:Inter,system-ui}
-body{
-  margin:0;
-  background:radial-gradient(circle at top,#101a30,#070a11);
-  color:var(--text);
-  overflow:hidden;
-}
-
-/* TOP */
-.topbar{
-  height:64px;
-  display:flex;
-  align-items:center;
-  gap:16px;
-  padding:0 24px;
-  border-bottom:1px solid var(--line);
-  background:linear-gradient(90deg,#0b1222,#0a0f1d);
-}
-.topbar b{font-size:18px}
-
-/* LAYOUT */
-.wrapper{
-  display:grid;
-  grid-template-columns:220px 1fr;
-  height:calc(100vh - 64px);
-}
-
-/* CANAIS */
-.channels{
-  background:var(--panel);
-  border-right:1px solid var(--line);
-  overflow-y:auto;
-}
-.channel{
-  height:90px;
-  display:flex;
-  align-items:center;
-  padding:0 16px;
-  border-bottom:1px solid var(--line);
-  cursor:pointer;
-  font-weight:600;
-  transition:.2s;
-}
-.channel:hover{background:var(--hover)}
-.channel.selected{
-  background:#16203a;
-  box-shadow:inset 4px 0 0 var(--content);
-}
-
-/* GRADE */
-.grid{overflow:auto}
-.time-header{
-  display:flex;
-  position:sticky;
-  top:0;
-  background:var(--panel);
-  z-index:10;
-}
-.time{
-  min-width:160px;
-  text-align:center;
-  padding:10px 0;
-  border-left:1px solid var(--line);
-  color:var(--muted);
-  font-size:13px;
-}
-.row{
-  position:relative;
-  height:90px;
-  border-bottom:1px solid var(--line);
-}
-
-/* BLOCO */
-.block{
-  position:absolute;
-  top:12px;
-  height:66px;
-  border-radius:12px;
-  padding:6px 8px;
+body{margin:0;background:radial-gradient(circle at top,#101a30,#070a11);color:#fff;overflow:hidden}
+.top{height:64px;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid var(--line)}
+.app{display:grid;grid-template-columns:220px 1fr;height:calc(100vh - 64px)}
+.canais{background:var(--panel);border-right:1px solid var(--line)}
+.canal{height:88px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.canal.active{background:#16203a;box-shadow:inset 4px 0 0 var(--primary)}
+.grade{overflow:auto}
+.horas{display:flex;position:sticky;top:0;background:var(--panel)}
+.hora{min-width:160px;text-align:center;padding:10px 0;border-left:1px solid var(--line);color:var(--muted)}
+.linha{position:relative;height:88px;border-bottom:1px solid var(--line)}
+.bloco{
+  position:absolute;top:12px;height:64px;
   background:linear-gradient(135deg,#36c7ff,#1aa3e8);
-  color:#00131d;
-  font-size:12px;
-  cursor:grab;
-  overflow:hidden;
-  box-shadow:0 4px 10px rgba(0,0,0,.4);
+  border-radius:12px;padding:6px;font-size:12px;color:#00131d
 }
-.block img{
-  width:36px;
-  height:52px;
-  border-radius:6px;
-  float:left;
-  margin-right:6px;
-  object-fit:cover;
-}
-.block small{
-  display:block;
-  opacity:.7;
-  font-size:11px;
-}
-
-/* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.65);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:99;
-}
-.modal-box{
-  width:820px;
-  max-height:80vh;
-  background:#0e1422;
-  border-radius:18px;
-  padding:16px;
-  display:flex;
-  flex-direction:column;
-  box-shadow:0 30px 80px rgba(0,0,0,.6);
-}
-.modal-header{
-  display:flex;
-  gap:10px;
-  margin-bottom:12px;
-}
-.modal-header input,
-.modal-header select{
-  flex:1;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  background:var(--card);
-  color:#fff;
-}
-.modal-list{
-  overflow-y:auto;
-  flex:1;
-  padding-right:6px;
-}
-.modal-item{
-  display:flex;
-  gap:12px;
-  padding:10px;
-  border-radius:14px;
-  background:var(--card);
-  cursor:pointer;
-  margin-bottom:10px;
-  transition:.2s;
-}
-.modal-item:hover{background:#24304a}
-.modal-item img{
-  width:60px;
-  height:90px;
-  border-radius:8px;
-  object-fit:cover;
-}
-.modal-item small{color:var(--muted)}
 </style>
 </head>
 
 <body>
 
-<div class="topbar">
+<div class="top">
   <b>📺 EPG Profissional</b>
   <input type="date" id="data">
 </div>
 
-<div class="wrapper">
-  <div class="channels" id="channels"></div>
-
-  <div class="grid">
-    <div class="time-header" id="timeHeader"></div>
-    <div id="rows"></div>
-  </div>
-</div>
-
-<!-- MODAL -->
-<div class="modal" id="modal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <input id="filtroNome" placeholder="Buscar conteúdo">
-      <select id="filtroCategoria"></select>
-    </div>
-    <div class="modal-list" id="modalList"></div>
+<div class="app">
+  <div class="canais" id="canais"></div>
+  <div class="grade">
+    <div class="horas" id="horas"></div>
+    <div id="linhas"></div>
   </div>
 </div>
 
 <script>
-/* ================= SUPABASE ================= */
-const db = window.supabase.createClient(
+const supabase = window.supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-/* ================= VARS ================= */
 const DAY = 1440;
-let canalSelecionado = null;
-let filmesCache = [];
+let canalAtual = null;
 
-/* ================= HELPERS ================= */
-function minToTime(min){
-  const h=Math.floor(min/60);
-  const m=min%60;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
-}
-function timeToMin(t){
-  const [h,m]=t.split(":").map(Number);
-  return h*60+m;
-}
-
-/* ================= TIME HEADER ================= */
-const th=document.getElementById("timeHeader");
+/* HORAS */
+const horas=document.getElementById("horas");
 for(let h=0;h<24;h++){
-  th.innerHTML+=`<div class="time">${String(h).padStart(2,"0")}:00</div>`;
+  horas.innerHTML+=`<div class="hora">${String(h).padStart(2,'0')}:00</div>`;
 }
 
-/* ================= LOAD ================= */
+/* LOAD */
 async function load(){
   const data=document.getElementById("data").value;
 
-  const {data:canais}=await db.from("canais").select("*").order("ordem");
-  const ch=document.getElementById("channels");
-  const rows=document.getElementById("rows");
-  ch.innerHTML=""; rows.innerHTML="";
+  const {data:canais}=await supabase
+    .from("canais")
+    .select("*")
+    .eq("ativo",true)
+    .order("ordem");
+
+  const canaisEl=document.getElementById("canais");
+  const linhasEl=document.getElementById("linhas");
+  canaisEl.innerHTML=""; linhasEl.innerHTML="";
 
   canais.forEach(c=>{
-    const el=document.createElement("div");
-    el.className="channel";
-    el.innerText=c.nome;
-    el.onclick=()=>selectCanal(c.id,el);
-    el.ondblclick=openModal;
-    ch.appendChild(el);
-
-    rows.innerHTML+=`<div class="row" data-canal="${c.id}"></div>`;
+    const div=document.createElement("div");
+    div.className="canal";
+    div.innerText=c.nome;
+    div.onclick=()=>selecionarCanal(c.id,div);
+    canaisEl.appendChild(div);
+    linhasEl.innerHTML+=`<div class="linha" data-canal="${c.id}"></div>`;
   });
 
-  const {data:filmes}=await db.from("filmes").select("*").eq("ativo",true);
-  filmesCache = filmes || [];
-
-  popularCategorias();
   renderProgramacao(data);
 }
 
-/* ================= CANAL ================= */
-function selectCanal(id,el){
-  canalSelecionado=id;
-  document.querySelectorAll(".channel").forEach(c=>c.classList.remove("selected"));
-  el.classList.add("selected");
+function selecionarCanal(id,el){
+  canalAtual=id;
+  document.querySelectorAll(".canal").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
 }
 
-/* ================= PROGRAMAÇÃO ================= */
+/* PROGRAMAÇÃO */
 async function renderProgramacao(data){
-  const {data:prog}=await db
+  const {data:prog}=await supabase
     .from("programacao")
     .select("*,filmes(*)")
     .eq("data",data);
 
-  document.querySelectorAll(".row").forEach(row=>{
-    row.innerHTML="";
-    const canal=row.dataset.canal;
+  document.querySelectorAll(".linha").forEach(linha=>{
+    linha.innerHTML="";
+    const canal=linha.dataset.canal;
 
     prog.filter(p=>p.canal_id===canal).forEach(p=>{
-      const ini=timeToMin(p.hora_inicio);
-      const fim=timeToMin(p.hora_fim);
-
       const b=document.createElement("div");
-      b.className="block";
-      b.style.left=(ini/DAY)*100+"%";
-      b.style.width=((fim-ini)/DAY)*100+"%";
-
+      b.className="bloco";
+      b.style.left=(p.inicio_minuto/DAY)*100+"%";
+      b.style.width=(p.duracao_minutos/DAY)*100+"%";
       b.innerHTML=`
-        <img src="${p.filmes?.capa_url || ''}">
-        <b>${p.filmes?.titulo || 'Conteúdo'}</b>
+        <b>${p.filmes.titulo}</b>
         <small>${p.duracao_minutos} min</small>
       `;
-      row.appendChild(b);
+      linha.appendChild(b);
     });
   });
 }
 
-/* ================= MODAL ================= */
-function openModal(){
-  if(!canalSelecionado) return alert("Selecione um canal");
-  document.getElementById("modal").style.display="flex";
-  aplicarFiltro();
-}
+/* ADD TESTE (DUPLO CLIQUE NA TELA) */
+document.body.ondblclick=async ()=>{
+  if(!canalAtual) return alert("Selecione um canal");
 
-/* ================= CATEGORIAS ================= */
-function popularCategorias(){
-  const sel=document.getElementById("filtroCategoria");
-  const cats=[...new Set(filmesCache.map(f=>f.categoria).filter(Boolean))];
-  sel.innerHTML='<option value="">Todas categorias</option>';
-  cats.forEach(c=>sel.innerHTML+=`<option>${c}</option>`);
-}
+  const data=document.getElementById("data").value;
 
-/* ================= FILTRO ================= */
-function aplicarFiltro(){
-  const nome=document.getElementById("filtroNome").value.toLowerCase();
-  const cat=document.getElementById("filtroCategoria").value;
-  const list=document.getElementById("modalList");
-  list.innerHTML="";
-
-  filmesCache
-    .filter(f=>(!nome || f.titulo.toLowerCase().includes(nome)) &&
-               (!cat || f.categoria===cat))
-    .forEach(f=>{
-      const div=document.createElement("div");
-      div.className="modal-item";
-      div.ondblclick=()=>addConteudo(f);
-
-      div.innerHTML=`
-        <img src="${f.capa_url}">
-        <div>
-          <b>${f.titulo}</b>
-          <small>${f.categoria} • ${f.duracao_minutos||120} min</small>
-        </div>`;
-      list.appendChild(div);
-    });
-}
-
-/* ================= INSERT ================= */
-async function addConteudo(f){
-  const dataStr=document.getElementById("data").value;
-
-  const {data:last}=await db
+  const {data:last}=await supabase
     .from("programacao")
     .select("*")
-    .eq("canal_id",canalSelecionado)
-    .eq("data",dataStr)
-    .order("hora_fim",{ascending:false})
+    .eq("canal_id",canalAtual)
+    .eq("data",data)
+    .order("inicio_minuto",{ascending:false})
     .limit(1);
 
-  let inicioMin=last?.[0]?timeToMin(last[0].hora_fim):0;
-  let dur=f.duracao_minutos||120;
-  let restante=dur;
+  const inicio=last?.[0]
+    ? last[0].inicio_minuto+last[0].duracao_minutos
+    : 0;
 
-  if(inicioMin<DAY && restante>0){
-    const fimHoje=Math.min(DAY,inicioMin+restante);
-    await db.from("programacao").insert({
-      canal_id:canalSelecionado,
-      filme_id:f.id,
-      data:dataStr,
-      hora_inicio:minToTime(inicioMin),
-      hora_fim:fimHoje>=DAY?"23:59:59":minToTime(fimHoje),
-      duracao_minutos:fimHoje-inicioMin
-    });
-    restante-=(fimHoje-inicioMin);
-  }
+  const {data:filme}=await supabase
+    .from("filmes")
+    .select("*")
+    .limit(1)
+    .single();
 
-  if(restante>0){
-    const next=new Date(dataStr);
-    next.setDate(next.getDate()+1);
-    await db.from("programacao").insert({
-      canal_id:canalSelecionado,
-      filme_id:f.id,
-      data:next.toISOString().split("T")[0],
-      hora_inicio:"00:00:00",
-      hora_fim:minToTime(restante),
-      duracao_minutos:restante
-    });
-  }
+  await supabase.from("programacao").insert({
+    canal_id:canalAtual,
+    filme_id:filme.id,
+    data:data,
+    inicio_minuto:inicio,
+    duracao_minutos:filme.duracao_minutos||120
+  });
 
-  document.getElementById("modal").style.display="none";
   load();
-}
+};
 
-/* ================= EVENTS ================= */
-document.getElementById("filtroNome").oninput=aplicarFiltro;
-document.getElementById("filtroCategoria").onchange=aplicarFiltro;
-
-/* ================= INIT ================= */
+/* INIT */
 document.getElementById("data").value=new Date().toISOString().split("T")[0];
 load();
 </script>
