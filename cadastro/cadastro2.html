@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CLENA TV • Conteúdos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<style>
+:root{
+  --bg:#ffffff;
+  --panel:#f3f4f6;
+  --card:#ffffff;
+  --border:#d1d5db;
+  --text:#000;
+  --accent:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial;background:var(--bg)}
+.wrapper{height:100vh;padding:16px;display:grid;grid-template-columns:420px 1fr;gap:16px}
+.panel{background:var(--panel);border-radius:14px;padding:16px;display:flex;flex-direction:column}
+h3{margin:0 0 10px}
+label{font-size:13px;font-weight:600;margin-top:10px}
+input,textarea,select{
+  width:100%;margin-top:4px;padding:10px;border-radius:8px;
+  border:1px solid var(--border)
+}
+button{
+  margin-top:14px;padding:12px;border:none;border-radius:10px;
+  background:var(--accent);color:#fff;font-weight:700;cursor:pointer
+}
+.secondary{background:#6b7280}
+.danger{background:#991b1b}
+
+.grid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1);cursor:pointer}
+.card img{width:100%;height:200px;object-fit:cover}
+.card .box{padding:10px;font-weight:600}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:999}
+.modal-box{width:900px;max-height:90vh;background:#fff;border-radius:14px;padding:16px;overflow:auto}
+.modal-header{display:flex;gap:16px}
+.modal-header img{width:140px;height:210px;object-fit:cover;border-radius:8px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+</style>
+</head>
+
+<body>
+
+<script>
+const supabaseClient = supabase.createClient(
+  "https://dxkszikemntfusfyrzos.supabase.co",
+  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
+);
+
+/* ===== UTIL ===== */
+function limparFormulario(){
+  rawInfo.value="";
+  titulo.value="";
+  descricao.value="";
+  categoria.value="";
+  classificacao.value="";
+  ano.value="";
+  idioma.value="";
+  audio.value="";
+  nota.value="";
+  video.value="";
+  capaFile.value="";
+  tipo.value="filme";
+}
+
+function limparTitulo(t){
+  return t.replace(/download|torrent/ig,"").replace(/\s{2,}/g," ").trim();
+}
+
+function parseTexto(raw,f){
+  if(!raw)return;
+  const g=r=>{const m=raw.match(r);return m?m[1].trim():""};
+  const first=raw.split("\n").find(l=>l.trim());
+  if(first) f.titulo.value = limparTitulo(first);
+
+  f.descricao.value=g(/Sinopse:\s*([\s\S]+)/i);
+  f.categoria.value=g(/G[eê]neros:\s*(.+)/i);
+
+  const livre=g(/Classifica[cç][aã]o:\s*(Livre)/i);
+  const num=g(/Classifica[cç][aã]o:\s*(\d{1,2})/i);
+  f.classificacao.value = livre || (num ? num+" Anos":"");
+
+  f.ano.value=g(/Lan[cç]amento:\s*(\d{4})/i);
+  f.idioma.value=g(/Idioma:\s*(.+)/i);
+  f.audio.value=g(/(Dublado|Dual Áudio)/i);
+  f.nota.value=g(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
+}
+
+let registros=[], atual=null;
+
+/* ===== CRUD ===== */
+async function salvar(){
+  await supabaseClient.from("filmes").insert({
+    titulo:titulo.value,
+    descricao:descricao.value,
+    categoria:categoria.value,
+    classificacao_indicativa:classificacao.value,
+    ano_lancamento:ano.value,
+    idioma:idioma.value,
+    audio:audio.value,
+    nota_critica:nota.value,
+    tipo:tipo.value,
+    video_url:video.value,
+    raw_info:rawInfo.value,
+    ativo:true
+  });
+  limparFormulario();
+  carregar();
+}
+
+async function carregar(){
+  const {data}=await supabaseClient.from("filmes").select("*").order("created_at",{ascending:false});
+  registros=data||[];
+  render();
+}
+
+function render(){
+  lista.innerHTML="";
+  registros.forEach(r=>{
+    const d=document.createElement("div");
+    d.className="card";
+    d.ondblclick=()=>abrirModal(r);
+    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box">${r.titulo}</div>`;
+    lista.appendChild(d);
+  });
+}
+
+/* ===== MODAL ===== */
+function abrirModal(r){
+  atual=r;
+  modal.style.display="flex";
+
+  mCapa.src=r.capa_url||"";
+  mTitulo.value=r.titulo||"";
+  mDescricao.value=r.descricao||"";
+  mCategoria.value=r.categoria||"";
+  mClassificacao.value=r.classificacao_indicativa||"";
+  mAno.value=r.ano_lancamento||"";
+  mIdioma.value=r.idioma||"";
+  mAudio.value=r.audio||"";
+  mNota.value=r.nota_critica||"";
+  mVideo.value=r.video_url||"";
+  mRaw.value=r.raw_info||"";
+}
+
+function fecharModal(){
+  modal.style.display="none";
+}
+
+async function salvarEdicao(){
+  await supabaseClient.from("filmes").update({
+    titulo:mTitulo.value,
+    descricao:mDescricao.value,
+    categoria:mCategoria.value,
+    classificacao_indicativa:mClassificacao.value,
+    ano_lancamento:mAno.value,
+    idioma:mIdioma.value,
+    audio:mAudio.value,
+    nota_critica:mNota.value,
+    video_url:mVideo.value,
+    raw_info:mRaw.value
+  }).eq("id",atual.id);
+
+  fecharModal();
+  carregar();
+}
+
+async function excluirRegistro(){
+  if(!confirm("Excluir este conteúdo?")) return;
+  await supabaseClient.from("filmes").delete().eq("id",atual.id);
+  fecharModal();
+  carregar();
+}
+
+document.addEventListener("DOMContentLoaded",carregar);
+</script>
+
+<div class="wrapper">
+
+<!-- CADASTRO -->
+<div class="panel">
+<h3>Novo Conteúdo</h3>
+
+<label>Texto para análise</label>
+<textarea id="rawInfo"></textarea>
+<button onclick="parseTexto(rawInfo.value,{titulo,descricao,categoria,classificacao,ano,idioma,audio,nota})">Analisar</button>
+
+<label>Nome</label><input id="titulo">
+<label>Sinopse</label><textarea id="descricao"></textarea>
+<label>Categoria</label><input id="categoria">
+<label>Classificação</label><input id="classificacao">
+<label>Ano</label><input id="ano">
+<label>Idioma</label><input id="idioma">
+<label>Áudio</label><input id="audio">
+<label>Nota</label><input id="nota">
+
+<label>Tipo</label>
+<select id="tipo">
+  <option value="filme">Filme</option>
+  <option value="serie">Série</option>
+</select>
+
+<label>ID do vídeo</label>
+<input id="video">
+
+<button onclick="salvar()">Salvar</button>
+</div>
+
+<!-- LISTA -->
+<div class="panel">
+<div id="lista" class="grid"></div>
+</div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal" onclick="fecharModal()">
+<div class="modal-box" onclick="event.stopPropagation()">
+
+<div class="modal-header">
+<img id="mCapa">
+<div style="flex:1">
+<label>Texto para análise</label>
+<textarea id="mRaw"></textarea>
+<button onclick="parseTexto(mRaw.value,{titulo:mTitulo,descricao:mDescricao,categoria:mCategoria,classificacao:mClassificacao,ano:mAno,idioma:mIdioma,audio:mAudio,nota:mNota})">Analisar</button>
+</div>
+</div>
+
+<label>Nome</label><input id="mTitulo">
+<label>Sinopse</label><textarea id="mDescricao"></textarea>
+
+<div class="row">
+<div>
+<label>Categoria</label><input id="mCategoria">
+<label>Classificação</label><input id="mClassificacao">
+<label>Ano</label><input id="mAno">
+<label>Vídeo</label><input id="mVideo">
+</div>
+<div>
+<label>Idioma</label><input id="mIdioma">
+<label>Áudio</label><input id="mAudio">
+<label>Nota</label><input id="mNota">
+</div>
+</div>
+
+<div style="display:flex;gap:10px;margin-top:16px">
+<button onclick="salvarEdicao()">Salvar</button>
+<button class="secondary" onclick="fecharModal()">Cancelar</button>
+<button class="danger" onclick="excluirRegistro()">Excluir</button>
+</div>
+
+</div>
+</div>
+
+</body>
+</html>
