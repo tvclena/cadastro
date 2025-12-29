@@ -89,9 +89,12 @@ function parseTexto(raw,f){
   if(first)f.titulo.value=limparTitulo(first);
   f.descricao.value=g(/Sinopse:\s*([\s\S]+)/i);
   f.categoria.value=g(/G[eê]neros:\s*(.+)/i);
-  f.classificacao.value=
-    g(/Classifica[cç][aã]o:\s*([\d]{1,2}\s*Anos?)/i)||
-    (g(/Classifica[cç][aã]o:\s*(\d{1,2})/i)?g(/Classifica[cç][aã]o:\s*(\d{1,2})/i)+" Anos":"");
+f.classificacao.value =
+  g(/Cl[aá]ss?ifica[cç][aã]o:\s*([\d]{1,2}\s*Anos?)/i) ||
+  (g(/Cl[aá]ss?ifica[cç][aã]o:\s*(\d{1,2})/i)
+    ? g(/Cl[aá]ss?ifica[cç][aã]o:\s*(\d{1,2})/i) + " Anos"
+    : "");
+
   f.ano.value=g(/Lan[cç]amento:\s*(\d{4})/i);
   f.idioma.value=g(/Idioma:\s*(.+)/i);
   f.audio.value=g(/(Dublado\s*\/\s*Dual Áudio|Dual Áudio|Dublado)/i);
