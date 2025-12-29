@@ -139,6 +139,8 @@ function parseTexto(raw,f){
   f.idioma.value = g(/Idioma:\s*(.+)/i);
   f.audio.value  = g(/(Dublado\s*\/\s*Dual Áudio|Dual Áudio|Dublado)/i);
   f.nota.value   = g(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
+  // 🔥 DISPARA A VERIFICAÇÃO APÓS AUTOFILL
+  checarTituloDigitado();
 }
 
 /* ================= CRUD ================= */
@@ -250,7 +252,31 @@ async function salvarEdicao(){
   fecharModal();
   carregar();
 }
+function verificarTituloExistente(tituloDigitado){
+  const t = tituloDigitado.trim().toLowerCase();
+  if(!t) return [];
 
+  return registros.filter(r =>
+    r.titulo?.toLowerCase() === t
+  );
+}
+
+function checarTituloDigitado(){
+  const encontrados = verificarTituloExistente(titulo.value);
+
+  if(encontrados.length){
+    alertaTitulo.style.display = "block";
+    busca.value = titulo.value;
+  }else{
+    alertaTitulo.style.display = "none";
+    busca.value = "";
+  }
+
+  render();
+}
+
+
+  
 async function excluirRegistro(){
   if(!confirm("Tem certeza que deseja excluir este conteúdo?")) return;
   await supabaseClient.from("filmes").delete().eq("id",atual.id);
@@ -271,7 +297,17 @@ document.addEventListener("DOMContentLoaded",carregar);
 <textarea id="rawInfo"></textarea>
 <button onclick="parseTexto(rawInfo.value,{titulo,descricao,categoria,classificacao,ano,idioma,audio,nota})">Autofill</button>
 
-<label>Nome</label><input id="titulo">
+<label>Nome</label>
+<input id="titulo" oninput="checarTituloDigitado()">
+
+<small id="alertaTitulo" style="
+  display:none;
+  color:#dc2626;
+  font-weight:600;
+  margin-top:4px
+">
+⚠️ Já existe conteúdo cadastrado com este título
+</small>
 <label>Sinopse</label><textarea id="descricao"></textarea>
 <label>Categoria</label><input id="categoria">
 <label>Classificação</label><input id="classificacao">
