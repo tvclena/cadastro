@@ -33,6 +33,7 @@ button{
   background:var(--accent);color:#fff;font-weight:700;cursor:pointer
 }
 .secondary{background:#6b7280}
+.danger{background:#991b1b}
 .filters{display:flex;gap:8px;margin-bottom:12px}
 .grid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
 .card{background:var(--card);border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1);cursor:pointer}
@@ -160,7 +161,7 @@ function parseTexto(raw,f){
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="modal">
+<div id="modal" class="modal" onclick="fecharModal()">
 <div class="modal-box" onclick="event.stopPropagation()">
 
 <div class="modal-header">
@@ -200,6 +201,7 @@ function parseTexto(raw,f){
 <div style="display:flex;gap:10px;margin-top:16px">
 <button onclick="salvarEdicao()">Salvar</button>
 <button class="secondary" onclick="fecharModal()">Cancelar</button>
+<button class="danger" onclick="excluirRegistro()">Excluir</button>
 </div>
 
 </div>
@@ -328,6 +330,25 @@ async function salvarEdicao(){
     capa_url:capa,
     raw_info:mRaw.value
   }).eq("id",atual.id);
+
+  fecharModal();
+  carregar();
+}
+
+async function excluirRegistro(){
+  if(!confirm("Tem certeza que deseja excluir este conteúdo?")) return;
+
+  if(atual.tipo === "serie"){
+    await supabaseClient
+      .from("filmes")
+      .delete()
+      .eq("serie_nome", atual.serie_nome || atual.titulo);
+  }else{
+    await supabaseClient
+      .from("filmes")
+      .delete()
+      .eq("id", atual.id);
+  }
 
   fecharModal();
   carregar();
