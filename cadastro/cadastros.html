@@ -10,7 +10,7 @@
 <style>
 :root{
   --bg:#ffffff;
-  --panel:#f4f4f5;
+  --panel:#f3f4f6;
   --card:#ffffff;
   --border:#d1d5db;
   --text:#000000;
@@ -29,7 +29,7 @@ body{
   height:100vh;
   padding:16px;
   display:grid;
-  grid-template-columns:400px 1fr;
+  grid-template-columns:420px 1fr;
   gap:16px;
 }
 
@@ -114,7 +114,7 @@ button{
   z-index:999;
 }
 .modal-box{
-  width:700px;
+  width:760px;
   max-height:90vh;
   background:#fff;
   border-radius:14px;
@@ -127,13 +127,15 @@ button{
 <body>
 
 <script>
+/* ===== SUPABASE ===== */
 const supabaseClient = supabase.createClient(
   "https://dxkszikemntfusfyrzos.supabase.co",
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-let registros=[], atual=null;
+let registros = [], atual = null;
 
+/* ===== UTIL ===== */
 function limparTitulo(txt){
   return txt
     .replace(/download/ig,"")
@@ -142,16 +144,36 @@ function limparTitulo(txt){
     .trim();
 }
 
-function parseTexto(raw, target){
-  const get=r=>{const m=raw.match(r);return m?m[1].trim():""};
-  target.titulo.value = limparTitulo(raw.split("\n").find(l=>l.trim())||"");
-  target.descricao.value = get(/Sinopse:\s*([\s\S]+)/i);
-  target.categoria.value = get(/G[eê]neros:\s*(.+)/i);
-  target.classificacao.value = get(/Classifica[cç][aã]o:\s*(.+)/i);
-  target.ano.value = get(/Lan[cç]amento:\s*(\d{4})/i);
-  target.idioma.value = get(/Idioma:\s*(.+)/i);
-  target.audio.value = get(/(Dublado\s*\/\s*Dual Áudio|Dublado|Dual Áudio)/i);
-  target.nota.value = get(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
+/* ===== PARSER (SEMPRE ATUALIZA) ===== */
+function parseTexto(raw, fields){
+  if(!raw || !raw.trim()) return;
+
+  const get = (regex) => {
+    const m = raw.match(regex);
+    return m ? m[1].trim() : "";
+  };
+
+  const firstLine = raw.split("\n").find(l => l.trim());
+  if(firstLine){
+    fields.titulo.value = limparTitulo(firstLine);
+  }
+
+  fields.descricao.value = get(/Sinopse:\s*([\s\S]+)/i);
+  fields.categoria.value = get(/G[eê]neros:\s*(.+)/i);
+
+  fields.classificacao.value =
+    get(/Classifica[cç][aã]o:\s*([\d]{1,2}\s*Anos?)/i) ||
+    get(/Classifica[cç][aã]o:\s*(\d{1,2})/i);
+
+  fields.ano.value = get(/Lan[cç]amento:\s*(\d{4})/i);
+  fields.idioma.value = get(/Idioma:\s*(.+)/i);
+
+  fields.audio.value =
+    get(/(Dublado\s*\/\s*Dual Áudio)/i) ||
+    get(/(Dual Áudio)/i) ||
+    get(/(Dublado)/i);
+
+  fields.nota.value = get(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
 }
 </script>
 
@@ -159,51 +181,49 @@ function parseTexto(raw, target){
 
 <!-- CADASTRO -->
 <div class="panel">
-<h3>Novo Conteúdo</h3>
+  <h3>Novo Conteúdo</h3>
 
-<label>Texto para análise</label>
-<textarea id="rawInfo"></textarea>
-<button onclick="parseTexto(rawInfo,{
-  titulo,descricao,categoria,classificacao,ano,idioma,audio,nota
-})">Analisar texto</button>
+  <label>Texto para análise</label>
+  <textarea id="rawInfo"></textarea>
+  <button onclick="parseTexto(rawInfo.value,{titulo,descricao,categoria,classificacao,ano,idioma,audio,nota})">
+    Analisar texto
+  </button>
 
-<label>Nome</label><input id="titulo">
-<label>Sinopse</label><textarea id="descricao"></textarea>
-<label>Categoria</label><input id="categoria">
-<label>Classificação</label><input id="classificacao">
-<label>Ano</label><input id="ano">
-<label>Idioma</label><input id="idioma">
-<label>Áudio</label><input id="audio">
-<label>Nota</label><input id="nota">
+  <label>Nome</label><input id="titulo">
+  <label>Sinopse</label><textarea id="descricao"></textarea>
+  <label>Categoria</label><input id="categoria">
+  <label>Classificação (idade)</label><input id="classificacao">
+  <label>Ano</label><input id="ano">
+  <label>Idioma</label><input id="idioma">
+  <label>Áudio</label><input id="audio">
+  <label>Nota</label><input id="nota">
 
-<label>Tipo</label>
-<select id="tipo">
-  <option value="filme">Filme</option>
-  <option value="serie">Série</option>
-</select>
+  <label>Tipo</label>
+  <select id="tipo">
+    <option value="filme">Filme</option>
+    <option value="serie">Série</option>
+  </select>
 
-<label>ID do vídeo</label>
-<input id="video">
+  <label>ID do vídeo</label><input id="video">
 
-<button onclick="salvar()">Salvar</button>
+  <button onclick="salvar()">Salvar</button>
 </div>
 
 <!-- LISTA -->
 <div class="panel">
+  <div class="filters">
+    <input id="busca" placeholder="Pesquisar..." oninput="render()">
+    <select id="filtroTipo" onchange="render()">
+      <option value="">Todos</option>
+      <option value="filme">Filme</option>
+      <option value="serie">Série</option>
+    </select>
+    <select id="filtroCategoria" onchange="render()">
+      <option value="">Categorias</option>
+    </select>
+  </div>
 
-<div class="filters">
-  <input id="busca" placeholder="Pesquisar..." oninput="render()">
-  <select id="filtroTipo" onchange="render()">
-    <option value="">Todos</option>
-    <option value="filme">Filme</option>
-    <option value="serie">Série</option>
-  </select>
-  <select id="filtroCategoria" onchange="render()">
-    <option value="">Categorias</option>
-  </select>
-</div>
-
-<div id="lista" class="grid"></div>
+  <div id="lista" class="grid"></div>
 </div>
 
 </div>
@@ -212,34 +232,40 @@ function parseTexto(raw, target){
 <div id="modal" class="modal" onclick="fecharModal()">
 <div class="modal-box" onclick="event.stopPropagation()">
 
-<label>Texto para análise</label>
-<textarea id="mRaw"></textarea>
-<button onclick="parseTexto(mRaw,{
-  titulo:mTitulo,descricao:mDescricao,categoria:mCategoria,
-  classificacao:mClassificacao,ano:mAno,idioma:mIdioma,audio:mAudio,nota:mNota
-})">Analisar texto</button>
+  <label>Texto para análise</label>
+  <textarea id="mRaw"></textarea>
+  <button onclick="parseTexto(mRaw.value,{titulo:mTitulo,descricao:mDescricao,categoria:mCategoria,classificacao:mClassificacao,ano:mAno,idioma:mIdioma,audio:mAudio,nota:mNota})">
+    Analisar texto
+  </button>
 
-<label>Nome</label><input id="mTitulo">
-<label>Sinopse</label><textarea id="mDescricao"></textarea>
-<label>Categoria</label><input id="mCategoria">
-<label>Classificação</label><input id="mClassificacao">
-<label>Ano</label><input id="mAno">
-<label>Idioma</label><input id="mIdioma">
-<label>Áudio</label><input id="mAudio">
-<label>Nota</label><input id="mNota">
+  <label>Nome</label><input id="mTitulo">
+  <label>Sinopse</label><textarea id="mDescricao"></textarea>
+  <label>Categoria</label><input id="mCategoria">
+  <label>Classificação</label><input id="mClassificacao">
+  <label>Ano</label><input id="mAno">
+  <label>Idioma</label><input id="mIdioma">
+  <label>Áudio</label><input id="mAudio">
+  <label>Nota</label><input id="mNota">
 
-<button onclick="salvarEdicao()">Salvar</button>
+  <button onclick="salvarEdicao()">Salvar</button>
 </div>
 </div>
 
 <script>
 async function salvar(){
   await supabaseClient.from("filmes").insert({
-    titulo:titulo.value,descricao:descricao.value,categoria:categoria.value,
+    titulo:titulo.value,
+    descricao:descricao.value,
+    categoria:categoria.value,
     classificacao_indicativa:classificacao.value,
-    ano_lancamento:ano.value,idioma:idioma.value,audio:audio.value,
-    nota_critica:nota.value,tipo:tipo.value,video_url:video.value,
-    raw_info:rawInfo.value,ativo:true
+    ano_lancamento:ano.value,
+    idioma:idioma.value,
+    audio:audio.value,
+    nota_critica:nota.value,
+    tipo:tipo.value,
+    video_url:video.value,
+    raw_info:rawInfo.value,
+    ativo:true
   });
   carregar();
 }
@@ -266,11 +292,11 @@ function popularCategorias(){
 
 function render(){
   lista.innerHTML="";
-  const t=busca.value.toLowerCase();
+  const q=busca.value.toLowerCase();
   registros.filter(r=>{
     if(filtroTipo.value && r.tipo!==filtroTipo.value) return false;
     if(filtroCategoria.value && !r.categoria?.includes(filtroCategoria.value)) return false;
-    if(t && !r.titulo.toLowerCase().includes(t)) return false;
+    if(q && !r.titulo.toLowerCase().includes(q)) return false;
     return true;
   }).forEach(r=>{
     const d=document.createElement("div");
@@ -297,12 +323,18 @@ function abrirModal(r){
 
 async function salvarEdicao(){
   await supabaseClient.from("filmes").update({
-    titulo:mTitulo.value,descricao:mDescricao.value,categoria:mCategoria.value,
+    titulo:mTitulo.value,
+    descricao:mDescricao.value,
+    categoria:mCategoria.value,
     classificacao_indicativa:mClassificacao.value,
-    ano_lancamento:mAno.value,idioma:mIdioma.value,audio:mAudio.value,
-    nota_critica:mNota.value,raw_info:mRaw.value
+    ano_lancamento:mAno.value,
+    idioma:mIdioma.value,
+    audio:mAudio.value,
+    nota_critica:mNota.value,
+    raw_info:mRaw.value
   }).eq("id",atual.id);
-  fecharModal();carregar();
+  fecharModal();
+  carregar();
 }
 
 function fecharModal(){modal.style.display="none"}
