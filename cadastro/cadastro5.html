@@ -111,6 +111,10 @@ function limparFormularioCadastro(){
   video.value="";
   tipo.value="filme";
   capaFile.value="";
+
+  // 🔥 ADICIONADO – EPISÓDIOS
+  episodiosCadastro.innerHTML="";
+  serieBox.style.display="none";
 }
 
 function limparTitulo(t){
@@ -139,7 +143,6 @@ function parseTexto(raw,f){
   f.idioma.value = g(/Idioma:\s*(.+)/i);
   f.audio.value  = g(/(Dublado\s*\/\s*Dual Áudio|Dual Áudio|Dublado)/i);
   f.nota.value   = g(/Nota da Cr[ií]tica:\s*([\d.]+)/i);
-  // 🔥 DISPARA A VERIFICAÇÃO APÓS AUTOFILL
   checarTituloDigitado();
 }
 
@@ -148,26 +151,56 @@ async function salvar(){
   let capa="";
   if(capaFile.files.length) capa=await uploadCapa(capaFile.files[0]);
 
-  await supabaseClient.from("filmes").insert({
-    titulo:titulo.value,
-    descricao:descricao.value,
-    categoria:categoria.value,
-    classificacao_indicativa:classificacao.value,
-    ano_lancamento:ano.value,
-    idioma:idioma.value,
-    audio:audio.value,
-    nota_critica:nota.value,
-    tipo:tipo.value,
-    video_url:video.value,
-    capa_url:capa,
-    raw_info:rawInfo.value,
-    ativo:true
-  });
+  // FILME (ORIGINAL)
+  if(tipo.value==="filme"){
+    await supabaseClient.from("filmes").insert({
+      titulo:titulo.value,
+      descricao:descricao.value,
+      categoria:categoria.value,
+      classificacao_indicativa:classificacao.value,
+      ano_lancamento:ano.value,
+      idioma:idioma.value,
+      audio:audio.value,
+      nota_critica:nota.value,
+      tipo:"filme",
+      video_url:video.value,
+      capa_url:capa,
+      raw_info:rawInfo.value,
+      ativo:true
+    });
+  }
+
+  // 🔥 ADICIONADO – SÉRIE
+  if(tipo.value==="serie"){
+    await supabaseClient.from("filmes").insert({
+      titulo:titulo.value,
+      descricao:descricao.value,
+      categoria:categoria.value,
+      tipo:"serie",
+      serie_nome:titulo.value,
+      capa_url:capa,
+      raw_info:rawInfo.value,
+      ativo:true
+    });
+
+    const eps=[...document.querySelectorAll("#episodiosCadastro input")];
+    const dados=eps.map((i,idx)=>({
+      titulo:`${titulo.value} E${idx+1}`,
+      tipo:"serie",
+      serie_nome:titulo.value,
+      temporada:1,
+      episodio:idx+1,
+      video_url:i.value,
+      ativo:true
+    }));
+    if(dados.length) await supabaseClient.from("filmes").insert(dados);
+  }
 
   limparFormularioCadastro();
   carregar();
 }
 
+/* ================= LISTA ================= */
 async function carregar(){
   const {data}=await supabaseClient
     .from("filmes")
@@ -192,12 +225,19 @@ function popularCategorias(){
 function render(){
   lista.innerHTML="";
   const q=busca.value.toLowerCase();
+  const vistos=new Set();
+
   registros.filter(r=>{
     if(filtroTipo.value && r.tipo!==filtroTipo.value) return false;
     if(filtroCategoria.value && !r.categoria?.includes(filtroCategoria.value)) return false;
     if(q && !r.titulo.toLowerCase().includes(q)) return false;
     return true;
   }).forEach(r=>{
+    if(r.tipo==="serie" && r.episodio) return;
+    const chave=r.tipo==="serie"?r.serie_nome:r.id;
+    if(vistos.has(chave)) return;
+    vistos.add(chave);
+
     const d=document.createElement("div");
     d.className="card";
     d.ondblclick=()=>abrirModal(r);
@@ -207,7 +247,7 @@ function render(){
 }
 
 /* ================= MODAL ================= */
-function abrirModal(r){
+async function abrirModal(r){
   atual=r;
   modal.style.display="flex";
 
@@ -225,8 +265,34 @@ function abrirModal(r){
 
   epBox.innerHTML="";
   mSerieBox.style.display = r.tipo==="serie" ? "block" : "none";
+
+  // 🔥 ADICIONADO – EPISÓDIOS NA EDIÇÃO
+  if(r.tipo==="serie"){
+    const {data}=await supabaseClient.from("filmes")
+      .select("*")
+      .eq("serie_nome",r.serie_nome)
+      .not("episodio","is",null)
+      .order("episodio");
+
+    data.forEach(ep=>{
+      const div=document.createElement("div");
+      div.className="ep";
+      div.innerHTML=`
+        <span>E${ep.episodio}</span>
+        <input value="${ep.video_url}">
+        <button onclick="excluirEp('${ep.id}')">❌</button>
+      `;
+      epBox.appendChild(div);
+    });
+  }
 }
 
+async function excluirEp(id){
+  await supabaseClient.from("filmes").delete().eq("id",id);
+  abrirModal(atual);
+}
+
+/* ================= ORIGINAIS ================= */
 function fecharModal(){
   modal.style.display="none";
 }
@@ -252,31 +318,20 @@ async function salvarEdicao(){
   fecharModal();
   carregar();
 }
+
 function verificarTituloExistente(tituloDigitado){
   const t = tituloDigitado.trim().toLowerCase();
   if(!t) return [];
-
-  return registros.filter(r =>
-    r.titulo?.toLowerCase() === t
-  );
+  return registros.filter(r => r.titulo?.toLowerCase() === t);
 }
 
 function checarTituloDigitado(){
   const encontrados = verificarTituloExistente(titulo.value);
-
-  if(encontrados.length){
-    alertaTitulo.style.display = "block";
-    busca.value = titulo.value;
-  }else{
-    alertaTitulo.style.display = "none";
-    busca.value = "";
-  }
-
+  alertaTitulo.style.display = encontrados.length ? "block" : "none";
+  busca.value = encontrados.length ? titulo.value : "";
   render();
 }
 
-
-  
 async function excluirRegistro(){
   if(!confirm("Tem certeza que deseja excluir este conteúdo?")) return;
   await supabaseClient.from("filmes").delete().eq("id",atual.id);
@@ -300,14 +355,10 @@ document.addEventListener("DOMContentLoaded",carregar);
 <label>Nome</label>
 <input id="titulo" oninput="checarTituloDigitado()">
 
-<small id="alertaTitulo" style="
-  display:none;
-  color:#dc2626;
-  font-weight:600;
-  margin-top:4px
-">
+<small id="alertaTitulo" style="display:none;color:#dc2626;font-weight:600;margin-top:4px">
 ⚠️ Já existe conteúdo cadastrado com este título
 </small>
+
 <label>Sinopse</label><textarea id="descricao"></textarea>
 <label>Categoria</label><input id="categoria">
 <label>Classificação</label><input id="classificacao">
@@ -317,9 +368,12 @@ document.addEventListener("DOMContentLoaded",carregar);
 <label>Nota</label><input id="nota">
 
 <label>Tipo</label>
-<select id="tipo">
-  <option value="filme">Filme</option>
-  <option value="serie">Série</option>
+<select id="tipo" onchange="
+  serieBox.style.display=this.value==='serie'?'block':'none';
+  video.style.display=this.value==='serie'?'none':'block';
+">
+<option value="filme">Filme</option>
+<option value="serie">Série</option>
 </select>
 
 <label>ID do vídeo (Filme)</label>
@@ -327,6 +381,13 @@ document.addEventListener("DOMContentLoaded",carregar);
 
 <label>Capa</label>
 <input type="file" id="capaFile">
+
+<!-- 🔥 ADICIONADO – EPISÓDIOS -->
+<div id="serieBox" style="display:none">
+  <h4>Episódios</h4>
+  <div id="episodiosCadastro"></div>
+  <button type="button" onclick="addEpisodio()">+ Adicionar episódio</button>
+</div>
 
 <button onclick="salvar()">Salvar</button>
 </div>
@@ -349,7 +410,7 @@ document.addEventListener("DOMContentLoaded",carregar);
 
 </div>
 
-<!-- MODAL (NÃO FECHA AO CLICAR FORA) -->
+<!-- MODAL -->
 <div id="modal" class="modal">
 <div class="modal-box">
 
@@ -395,6 +456,21 @@ document.addEventListener("DOMContentLoaded",carregar);
 
 </div>
 </div>
+
+<script>
+// 🔥 ADICIONADO – FUNÇÃO DE EPISÓDIO
+function addEpisodio(valor=""){
+  const n = episodiosCadastro.children.length + 1;
+  const div=document.createElement("div");
+  div.className="ep";
+  div.innerHTML=`
+    <span>E${n}</span>
+    <input value="${valor}">
+    <button onclick="this.parentElement.remove()">❌</button>
+  `;
+  episodiosCadastro.appendChild(div);
+}
+</script>
 
 </body>
 </html>
