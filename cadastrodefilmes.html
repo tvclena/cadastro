@@ -173,17 +173,28 @@ async function salvar(){
 if(tipo.value==="serie"){
 
   // 1️⃣ cria a série pai
-  await supabaseClient.from("filmes").insert({
-    titulo: titulo.value,
-    descricao: descricao.value,
-    categoria: categoria.value,
-    tipo: "serie",
-    serie_nome: titulo.value,
-    video_url: "SERIE_PARENT",
-    capa_url: capa,
-    raw_info: rawInfo.value,
-    ativo: true
-  });
+ await supabaseClient.from("filmes").insert({
+  titulo: titulo.value,
+  descricao: descricao.value,
+  categoria: categoria.value,
+
+  classificacao: classificacao.value,
+  ano_lancamento: ano.value,
+  idioma: idioma.value,
+  audio: audio.value,
+  nota_critica: nota.value,
+
+  tipo: "serie",
+  serie_nome: titulo.value,
+
+  // obrigatório por causa do NOT NULL
+  video_url: "SERIE_PARENT",
+
+  capa_url: capa,
+  raw_info: rawInfo.value,
+  ativo: true
+});
+
 
   // 2️⃣ cria os episódios
   const eps=[...document.querySelectorAll("#episodiosCadastro input")];
