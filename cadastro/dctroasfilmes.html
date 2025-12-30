@@ -1,4 +1,3 @@
-quero com tudo qeu esse faz
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -230,7 +229,7 @@ function render(){
   registros.filter(r=>{
     if(filtroTipo.value && r.tipo !== filtroTipo.value) return false;
 
-    // ✅ CORREÇÃO AQUI
+    // NÃO REMOVE SÉRIES SEM CATEGORIA
     if (
       filtroCategoria.value &&
       r.categoria !== null &&
@@ -241,7 +240,7 @@ function render(){
     return true;
   }).forEach(r=>{
 
-    // 🔥 MOSTRA APENAS A SÉRIE PAI
+    // MOSTRA APENAS A SÉRIE PAI
     if (r.tipo === "serie" && r.episodio != null) return;
 
     const d = document.createElement("div");
@@ -254,6 +253,7 @@ function render(){
     lista.appendChild(d);
   });
 }
+
 
 
 /* ================= MODAL ================= */
@@ -384,7 +384,7 @@ document.addEventListener("DOMContentLoaded",carregar);
 ">
 <option value="filme">Filme</option>
 <option value="serie">Série</option>
-<option value="documentarios">Documentário</option>
+<option value="documentario">Documentário</option>
 </select>
 
 <label>ID do vídeo (Filme)</label>
@@ -408,10 +408,12 @@ document.addEventListener("DOMContentLoaded",carregar);
 <div class="filters">
 <input id="busca" placeholder="Pesquisar..." oninput="render()">
 <select id="filtroTipo" onchange="render()">
-<option value="">Todos</option>
-<option value="filme">Filme</option>
-<option value="serie">Série</option>
+  <option value="">Todos</option>
+  <option value="filme">Filme</option>
+  <option value="serie">Série</option>
+  <option value="documentario">Documentário</option>
 </select>
+
 <select id="filtroCategoria" onchange="render()">
 <option value="">Categorias</option>
 </select>
