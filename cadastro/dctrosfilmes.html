@@ -226,14 +226,14 @@ function popularCategorias(){
 function render(){
   lista.innerHTML="";
   const q = busca.value.toLowerCase();
-  const vistos = new Set();
 
   registros.filter(r=>{
     if(filtroTipo.value && r.tipo !== filtroTipo.value) return false;
 
+    // ✅ CORREÇÃO AQUI
     if (
       filtroCategoria.value &&
-      r.categoria &&
+      r.categoria !== null &&
       !r.categoria.includes(filtroCategoria.value)
     ) return false;
 
@@ -241,12 +241,8 @@ function render(){
     return true;
   }).forEach(r=>{
 
-    // 🔥 só mostra série PAI
+    // 🔥 MOSTRA APENAS A SÉRIE PAI
     if (r.tipo === "serie" && r.episodio != null) return;
-
-    const chave = r.id;
-    if (vistos.has(chave)) return;
-    vistos.add(chave);
 
     const d = document.createElement("div");
     d.className = "card";
@@ -258,6 +254,7 @@ function render(){
     lista.appendChild(d);
   });
 }
+
 
 /* ================= MODAL ================= */
 async function abrirModal(r){
