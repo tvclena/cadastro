@@ -76,26 +76,70 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
 );
 
-/* ================= BUNNY ================= */
-const BUNNY_STORAGE_ZONE="sessao99";
-const BUNNY_API_KEY="d498d56e-361b-4a1e-9edb9eb63e3b-2e6a-4c17";
-const BUNNY_STORAGE_HOST="https://br.storage.bunnycdn.com";
-const BUNNY_CDN_URL="https://sessao99.b-cdn.net";
-
+/* ================= UPLOAD API ================= */
 async function uploadCapa(file){
   if(!file) return "";
-  const ext=file.name.split(".").pop();
-  const name=`${Date.now()}_${crypto.randomUUID()}.${ext}`;
-  const url=`${BUNNY_STORAGE_HOST}/${BUNNY_STORAGE_ZONE}/capas/${name}`;
-  await fetch(url,{
-    method:"PUT",
-    headers:{AccessKey:BUNNY_API_KEY,"Content-Type":file.type},
-    body:file
+
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch("https://cadastro-rho-henna.vercel.app/api/upload", {
+    method: "POST",
+    body: form
   });
-  return `${BUNNY_CDN_URL}/capas/${name}`;
+
+  if(!res.ok){
+    console.error("Erro upload", await res.text());
+    alert("Erro ao enviar imagem");
+    return "";
+  }
+
+  const json = await res.json();
+  return json.url;
 }
 
-let registros=[], atual=null;
+/* ================= ELEMENTOS DOM ================= */
+const rawInfo = document.getElementById("rawInfo");
+const titulo = document.getElementById("titulo");
+const descricao = document.getElementById("descricao");
+const categoria = document.getElementById("categoria");
+const classificacao = document.getElementById("classificacao");
+const ano = document.getElementById("ano");
+const idioma = document.getElementById("idioma");
+const audio = document.getElementById("audio");
+const nota = document.getElementById("nota");
+const video = document.getElementById("video");
+const tipo = document.getElementById("tipo");
+const capaFile = document.getElementById("capaFile");
+
+const busca = document.getElementById("busca");
+const lista = document.getElementById("lista");
+const filtroTipo = document.getElementById("filtroTipo");
+const filtroCategoria = document.getElementById("filtroCategoria");
+const alertaTitulo = document.getElementById("alertaTitulo");
+
+const modal = document.getElementById("modal");
+const mCapa = document.getElementById("mCapa");
+const mCapaFile = document.getElementById("mCapaFile");
+const mTitulo = document.getElementById("mTitulo");
+const mDescricao = document.getElementById("mDescricao");
+const mCategoria = document.getElementById("mCategoria");
+const mClassificacao = document.getElementById("mClassificacao");
+const mAno = document.getElementById("mAno");
+const mIdioma = document.getElementById("mIdioma");
+const mAudio = document.getElementById("mAudio");
+const mNota = document.getElementById("mNota");
+const mVideo = document.getElementById("mVideo");
+const mRaw = document.getElementById("mRaw");
+
+const serieBox = document.getElementById("serieBox");
+const episodiosCadastro = document.getElementById("episodiosCadastro");
+const mSerieBox = document.getElementById("mSerieBox");
+const epBox = document.getElementById("epBox");
+/* ================= ESTADO ================= */
+let registros = [];
+let atual = null;
+
 
 /* ================= UTIL ================= */
 function limparFormularioCadastro(){
