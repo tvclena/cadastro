@@ -171,17 +171,23 @@ async function salvar(){
   }
 
   // 🔥 ADICIONADO – SÉRIE
-  if(tipo.value==="serie"){
-    await supabaseClient.from("filmes").insert({
-      titulo:titulo.value,
-      descricao:descricao.value,
-      categoria:categoria.value,
-      tipo:"serie",
-      serie_nome:titulo.value,
-      capa_url:capa,
-      raw_info:rawInfo.value,
-      ativo:true
-    });
+ if(tipo.value==="serie"){
+  await supabaseClient.from("filmes").insert({
+    titulo: titulo.value,
+    descricao: descricao.value,
+    categoria: categoria.value,
+    tipo: "serie",
+    serie_nome: titulo.value,
+
+    // 🔥 OBRIGATÓRIO PARA PASSAR NO NOT NULL
+    video_url: "SERIE_PARENT",
+
+    capa_url: capa,
+    raw_info: rawInfo.value,
+    ativo: true
+  });
+}
+
 
     const eps=[...document.querySelectorAll("#episodiosCadastro input")];
     const dados=eps.map((i,idx)=>({
