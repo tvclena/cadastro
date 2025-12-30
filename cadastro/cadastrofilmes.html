@@ -233,10 +233,14 @@ function render(){
     if(q && !r.titulo.toLowerCase().includes(q)) return false;
     return true;
   }).forEach(r=>{
-    if(r.tipo==="serie" && r.episodio) return;
-    const chave=r.tipo==="serie"?r.serie_nome:r.id;
-    if(vistos.has(chave)) return;
-    vistos.add(chave);
+// ❗ só lista a série PAI
+if(r.tipo === "serie" && r.episodio !== null) return;
+
+// chave única real
+const chave = r.tipo === "serie" ? r.id : r.id;
+if (vistos.has(chave)) return;
+vistos.add(chave);
+
 
     const d=document.createElement("div");
     d.className="card";
