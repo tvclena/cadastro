@@ -224,28 +224,36 @@ function popularCategorias(){
 
 function render(){
   lista.innerHTML="";
-  const q=busca.value.toLowerCase();
-  const vistos=new Set();
+  const q = busca.value.toLowerCase();
+  const vistos = new Set();
 
   registros.filter(r=>{
-    if(filtroTipo.value && r.tipo!==filtroTipo.value) return false;
-    if(filtroCategoria.value && !r.categoria?.includes(filtroCategoria.value)) return false;
-    if(q && !r.titulo.toLowerCase().includes(q)) return false;
+    if(filtroTipo.value && r.tipo !== filtroTipo.value) return false;
+
+    if (
+      filtroCategoria.value &&
+      r.categoria &&
+      !r.categoria.includes(filtroCategoria.value)
+    ) return false;
+
+    if(q && !r.titulo?.toLowerCase().includes(q)) return false;
     return true;
   }).forEach(r=>{
-// ❗ só lista a série PAI
-if(r.tipo === "serie" && r.episodio !== null) return;
 
-// chave única real
-const chave = r.tipo === "serie" ? r.id : r.id;
-if (vistos.has(chave)) return;
-vistos.add(chave);
+    // 🔥 só mostra série PAI
+    if (r.tipo === "serie" && r.episodio != null) return;
 
+    const chave = r.id;
+    if (vistos.has(chave)) return;
+    vistos.add(chave);
 
-    const d=document.createElement("div");
-    d.className="card";
-    d.ondblclick=()=>abrirModal(r);
-    d.innerHTML=`<img src="${r.capa_url||''}"><div class="box">${r.titulo}</div>`;
+    const d = document.createElement("div");
+    d.className = "card";
+    d.ondblclick = () => abrirModal(r);
+    d.innerHTML = `
+      <img src="${r.capa_url || ''}">
+      <div class="box">${r.titulo}</div>
+    `;
     lista.appendChild(d);
   });
 }
