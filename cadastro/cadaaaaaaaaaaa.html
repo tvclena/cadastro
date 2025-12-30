@@ -157,7 +157,7 @@ async function salvar(){
       titulo:titulo.value,
       descricao:descricao.value,
       categoria:categoria.value,
-      classificacao_indicativa:classificacao.value,
+      classificacao: classificacao.value,
       ano_lancamento:ano.value,
       idioma:idioma.value,
       audio:audio.value,
@@ -255,7 +255,7 @@ async function abrirModal(r){
   mTitulo.value=r.titulo||"";
   mDescricao.value=r.descricao||"";
   mCategoria.value=r.categoria||"";
-  mClassificacao.value=r.classificacao_indicativa||"";
+  mClassificacao.value=r.classificacao||"";
   mAno.value=r.ano_lancamento||"";
   mIdioma.value=r.idioma||"";
   mAudio.value=r.audio||"";
@@ -305,7 +305,7 @@ async function salvarEdicao(){
     titulo:mTitulo.value,
     descricao:mDescricao.value,
     categoria:mCategoria.value,
-    classificacao_indicativa:mClassificacao.value,
+    classificacao:mClassificacao.value,
     ano_lancamento:mAno.value,
     idioma:mIdioma.value,
     audio:mAudio.value,
