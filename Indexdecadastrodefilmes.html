@@ -170,38 +170,37 @@ async function salvar(){
     });
   }
 
-  // 🔥 ADICIONADO – SÉRIE
- if(tipo.value==="serie"){
+if(tipo.value==="serie"){
+
+  // 1️⃣ cria a série pai
   await supabaseClient.from("filmes").insert({
     titulo: titulo.value,
     descricao: descricao.value,
     categoria: categoria.value,
     tipo: "serie",
     serie_nome: titulo.value,
-
-    // 🔥 OBRIGATÓRIO PARA PASSAR NO NOT NULL
     video_url: "SERIE_PARENT",
-
     capa_url: capa,
     raw_info: rawInfo.value,
     ativo: true
   });
-}
 
+  // 2️⃣ cria os episódios
+  const eps=[...document.querySelectorAll("#episodiosCadastro input")];
+  const dados=eps.map((i,idx)=>({
+    titulo:`${titulo.value} E${idx+1}`,
+    tipo:"serie",
+    serie_nome:titulo.value,
+    temporada:1,
+    episodio:idx+1,
+    video_url:i.value,
+    ativo:true
+  }));
 
-    const eps=[...document.querySelectorAll("#episodiosCadastro input")];
-    const dados=eps.map((i,idx)=>({
-      titulo:`${titulo.value} E${idx+1}`,
-      tipo:"serie",
-      serie_nome:titulo.value,
-      temporada:1,
-      episodio:idx+1,
-      video_url:i.value,
-      ativo:true
-    }));
-    if(dados.length) await supabaseClient.from("filmes").insert(dados);
+  if(dados.length){
+    await supabaseClient.from("filmes").insert(dados);
   }
-
+}
   limparFormularioCadastro();
   carregar();
 }
@@ -350,10 +349,26 @@ function checarTituloDigitado(){
 
 async function excluirRegistro(){
   if(!confirm("Tem certeza que deseja excluir este conteúdo?")) return;
-  await supabaseClient.from("filmes").delete().eq("id",atual.id);
+
+  // 🧹 Se for série, exclui todos os episódios primeiro
+  if(atual.tipo === "serie"){
+    await supabaseClient
+      .from("filmes")
+      .delete()
+      .eq("serie_nome", atual.serie_nome)
+      .not("episodio", "is", null);
+  }
+
+  // ❌ Exclui o registro principal (filme ou série)
+  await supabaseClient
+    .from("filmes")
+    .delete()
+    .eq("id", atual.id);
+
   fecharModal();
   carregar();
 }
+
 
 document.addEventListener("DOMContentLoaded",carregar);
 </script>
