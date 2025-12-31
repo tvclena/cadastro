@@ -183,12 +183,12 @@ if(tipo.value==="serie"){
   idioma: idioma.value,
   audio: audio.value,
   nota_critica: nota.value,
+tipo: "serie",
+serie_nome: titulo.value,
+temporada: null,
+episodio: null,
+video_url: "SERIE_PARENT",
 
-  tipo: "serie",
-  serie_nome: titulo.value,
-
-  // obrigatório por causa do NOT NULL
-  video_url: "SERIE_PARENT",
 
   capa_url: capa,
   raw_info: rawInfo.value,
@@ -292,31 +292,19 @@ async function abrirModal(r){
   epBox.innerHTML="";
   mSerieBox.style.display = r.tipo==="serie" ? "block" : "none";
 
-  // 🔥 ADICIONADO – EPISÓDIOS NA EDIÇÃO
-  if(r.tipo==="serie"){
-    const {data}=await supabaseClient.from("filmes")
-      .select("*")
-      .eq("serie_nome",r.serie_nome)
-      .not("episodio","is",null)
-      .order("episodio");
-
-    data.forEach(ep=>{
-      const div=document.createElement("div");
-      div.className="ep";
-      div.innerHTML=`
-        <span>E${ep.episodio}</span>
-        <input value="${ep.video_url}">
-        <button onclick="excluirEp('${ep.id}')">❌</button>
-      `;
-      epBox.appendChild(div);
-    });
+  if(r.tipo === "serie"){
+    await carregarEpisodiosSerie(r.serie_nome);
   }
 }
 
+
+
+  
 async function excluirEp(id){
   await supabaseClient.from("filmes").delete().eq("id",id);
-  abrirModal(atual);
+  await carregarEpisodiosSerie(atual.serie_nome);
 }
+
 
 /* ================= ORIGINAIS ================= */
 function fecharModal(){
@@ -356,6 +344,44 @@ function checarTituloDigitado(){
   alertaTitulo.style.display = encontrados.length ? "block" : "none";
   busca.value = encontrados.length ? titulo.value : "";
   render();
+}
+async function carregarEpisodiosSerie(nomeSerie){
+  epBox.innerHTML = "";
+
+  const { data, error } = await supabaseClient
+    .from("filmes")
+    .select("*")
+    .eq("serie_nome", nomeSerie)
+    .not("episodio", "is", null)
+    .order("temporada", { ascending: true })
+    .order("episodio", { ascending: true });
+
+  if(error){
+    console.error(error);
+    return;
+  }
+
+  let temporadaAtual = null;
+
+  data.forEach(ep => {
+
+    if(ep.temporada !== temporadaAtual){
+      temporadaAtual = ep.temporada;
+      const h = document.createElement("h5");
+      h.textContent = `Temporada ${temporadaAtual}`;
+      h.style.marginTop = "12px";
+      epBox.appendChild(h);
+    }
+
+    const div = document.createElement("div");
+    div.className = "ep";
+    div.innerHTML = `
+      <span>T${ep.temporada}E${ep.episodio}</span>
+      <input value="${ep.video_url}">
+      <button onclick="excluirEp('${ep.id}')">❌</button>
+    `;
+    epBox.appendChild(div);
+  });
 }
 
 async function excluirRegistro(){
