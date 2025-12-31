@@ -2,291 +2,175 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Painel • Streaming ADMIN</title>
+<title>CLENA TV • Filmes e Séries</title>
 
-<!-- VIEWPORT SEM ZOOM -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f0f10">
-
-<!-- iOS -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="Streaming ADM">
-<link rel="apple-touch-icon" href="logo.png">
-
-<!-- FAVICON -->
 <link rel="icon" href="logo.png">
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root{
-  --bg:#0f0f10;
-  --card:#1c1c1e;
-  --accent:#e50914;
-  --green:#00c853;
-  --text:#fff;
-  --muted:#aaa;
+  --bg:#0b0b0d;
+  --red:#e50914;
+  --gold:#ffcc66;
+  --text:#ffffff;
+  --muted:#cfcfcf;
 }
-*{margin:0;padding:0;box-sizing:border-box}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Inter,system-ui,Arial,sans-serif;
+}
+
 html,body{
-  background:var(--bg);
+  width:100%;
+  height:100%;
+  background:
+    radial-gradient(80% 60% at 50% 20%, #2a0000 0%, #0b0b0d 60%);
   color:var(--text);
-  font-family:Inter,Arial,sans-serif;
-  overscroll-behavior:none;
-  touch-action:manipulation;
+  overflow-x:hidden;
 }
 
-/* HEADER */
-header{
+/* HERO */
+.hero{
+  min-height:100vh;
   display:flex;
+  flex-direction:column;
   align-items:center;
-  gap:12px;
-  padding:16px 22px;
-  font-size:20px;
-  font-weight:800;
-}
-header img{
-  width:36px;
-  height:36px;
-  border-radius:8px;
+  justify-content:center;
+  padding:36px 18px;
+  text-align:center;
 }
 
-/* TITLES */
-.section-title{
-  padding:18px 22px 6px;
-  font-size:17px;
-  font-weight:700;
+/* LOGO */
+.logo{
+  width:180px;
+  margin-bottom:20px;
+  filter:drop-shadow(0 10px 30px rgba(229,9,20,.45));
 }
 
-/* SEARCH */
-.search-box{
-  padding:0 22px 12px;
+/* TITLE */
+.hero h1{
+  font-size:32px;
+  font-weight:900;
+  letter-spacing:.5px;
 }
-.search-box input{
-  width:100%;
-  padding:14px;
-  border-radius:12px;
-  background:#111;
-  border:1px solid #2a2a2a;
-  color:#fff;
+
+.hero h1 span{
+  color:var(--gold);
+}
+
+.hero p{
+  margin-top:10px;
   font-size:16px;
+  color:var(--muted);
 }
 
-/* KPIs */
-.kpis{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:14px;
-  padding:0 22px 18px;
-}
-.kpi{
-  background:var(--card);
-  border-radius:14px;
-  padding:14px;
-}
-.kpi span{font-size:12px;color:var(--muted)}
-.kpi strong{display:block;font-size:24px;margin-top:6px}
-
-/* GRID */
-.grid{
-  padding:14px 22px 28px;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-  gap:14px;
-}
-.card{
-  position:relative;
-  background:var(--card);
-  border-radius:12px;
-  overflow:hidden;
-}
-.card img{
+/* DEVICES */
+.devices{
+  margin:36px 0;
   width:100%;
-  height:220px;
-  object-fit:cover;
-}
-.overlay{
-  position:absolute;
-  inset:0;
-  background:linear-gradient(to top,rgba(0,0,0,.85),rgba(0,0,0,.15));
-}
-.info{
-  position:absolute;
-  bottom:0;
-  padding:10px;
-  width:100%;
-}
-.title{
-  font-size:13px;
-  font-weight:600;
+  max-width:920px;
 }
 
-/* TABLE */
-.table-container{
-  padding:14px 22px 40px;
-  overflow-x:auto;
-}
-table{
+.devices img{
   width:100%;
-  border-collapse:collapse;
-  background:var(--card);
-  border-radius:14px;
-}
-th,td{
-  padding:12px;
-  border-bottom:1px solid #2a2a2a;
-  font-size:13px;
-  white-space:nowrap;
-}
-th{background:#161616;color:#ccc}
-.user-cell{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.user-cell img{
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  object-fit:cover;
+  display:block;
+  filter:drop-shadow(0 35px 70px rgba(229,9,20,.4));
 }
 
-/* STATUS */
-.status{
-  padding:4px 10px;
+/* PRICE */
+.price{
+  margin-top:18px;
+}
+
+.price small{
+  display:block;
+  font-size:14px;
+  color:var(--muted);
+}
+
+.price strong{
+  display:block;
+  font-size:56px;
+  font-weight:900;
+  color:var(--gold);
+  margin:6px 0;
+}
+
+/* BADGE */
+.badge{
+  margin:16px auto 24px;
+  background:linear-gradient(135deg,#ffcc66,#ff9900);
+  color:#000;
+  padding:10px 20px;
   border-radius:999px;
-  font-size:11px;
-  font-weight:700;
+  font-size:14px;
+  font-weight:900;
+  display:inline-block;
+  box-shadow:0 10px 30px rgba(255,204,102,.35);
 }
-.aprovado{background:var(--green)}
-.bloqueado{background:var(--accent)}
 
-/* MOBILE – 6 CARDS */
-@media(max-width:768px){
-  .grid{grid-template-columns:repeat(3,1fr)}
-  .card img{height:160px}
+/* CTA */
+.cta{
+  margin-top:10px;
+}
+
+.cta a{
+  display:inline-block;
+  padding:16px 28px;
+  border-radius:14px;
+  background:var(--red);
+  color:#fff;
+  text-decoration:none;
+  font-weight:900;
+  font-size:16px;
+  letter-spacing:.4px;
+  box-shadow:0 22px 50px rgba(229,9,20,.45);
+  transition:.25s;
+}
+
+.cta a:hover{
+  transform:translateY(-2px);
+  box-shadow:0 30px 70px rgba(229,9,20,.65);
+}
+
+/* DESKTOP */
+@media(min-width:768px){
+  .hero h1{font-size:44px}
+  .price strong{font-size:64px}
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  <img src="logo.png">
-  Painel Streaming • ADMIN
-</header>
+<section class="hero">
 
-<!-- KPIs -->
-<div class="kpis">
-  <div class="kpi"><span>👤 Usuários</span><strong id="kpiUsers">0</strong></div>
-  <div class="kpi"><span>✅ Ativos</span><strong id="kpiAtivos">0</strong></div>
-  <div class="kpi"><span>💰 Receita</span><strong id="kpiReceita">R$ 0</strong></div>
-  <div class="kpi"><span>🎬 Filmes</span><strong id="kpiFilmes">0</strong></div>
-</div>
+  <img src="logo.png" class="logo" alt="CLENA TV">
 
-<!-- BUSCA -->
-<div class="search-box">
-  <input id="buscaUsuario" placeholder="🔍 Buscar usuário por nome ou email">
-</div>
+  <h1>ASSISTA <span>FILMES</span> E <span>SÉRIES</span></h1>
+  <p>Onde quiser • Quando quiser • Em qualquer dispositivo</p>
 
-<!-- USUÁRIOS -->
-<div class="section-title">👤 Usuários</div>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Usuário</th><th>Email</th><th>Status</th><th>Plano</th><th>Valor</th><th>Ações</th>
-</tr>
-</thead>
-<tbody id="listaUsuarios"></tbody>
-</table>
-</div>
+  <div class="devices">
+    <img src="device.png" alt="CLENA TV em todos os dispositivos">
+  </div>
 
-<!-- FILMES -->
-<div class="section-title">🎬 Filmes</div>
-<div id="gridFilmes" class="grid"></div>
+  <div class="price">
+    <small>A partir de</small>
+    <strong>R$ 10,99</strong>
+    <small>por mês</small>
+  </div>
 
-<script>
-/* SUPABASE */
-const sb = supabase.createClient(
-  "https://dxkszikemntfusfyrzos.supabase.co",
-  "sb_publishable_NNFvdfSXgOdGGVcSbphbjQ_brC3_9ed"
-);
+  <div class="badge">🎁 7 DIAS DE TESTE GRÁTIS</div>
 
-/* SERVICE WORKER */
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js");
-}
+  <div class="cta">
+    <a href="login.html">ACESSAR AGORA</a>
+  </div>
 
-/* RESTO DO JS (INALTERADO) */
-let usuariosCache=[];
-const listaUsuarios=document.getElementById("listaUsuarios");
-const buscaUsuario=document.getElementById("buscaUsuario");
-const gridFilmes=document.getElementById("gridFilmes");
-
-async function carregarADM(){
-  const {data:usuarios}=await sb.from("usuarios").select("*");
-  usuariosCache=usuarios||[];
-  renderUsuarios(usuariosCache);
-
-  document.getElementById("kpiUsers").textContent=usuariosCache.length;
-  document.getElementById("kpiAtivos").textContent=
-    usuariosCache.filter(u=>u.status==="aprovado").length;
-
-  document.getElementById("kpiReceita").textContent=
-    "R$ "+usuariosCache.reduce((s,u)=>s+Number(u.valor_assinatura||0),0).toFixed(2);
-
-  const {data:filmes}=await sb.from("filmes").select("*");
-  document.getElementById("kpiFilmes").textContent=filmes?.length||0;
-  gridFilmes.innerHTML="";
-  filmes?.forEach(f=>{
-    gridFilmes.innerHTML+=`
-      <div class="card">
-        <img src="${f.capa_url}">
-        <div class="overlay"></div>
-        <div class="info"><div class="title">${f.titulo}</div></div>
-      </div>`;
-  });
-}
-
-function renderUsuarios(lista){
-  listaUsuarios.innerHTML="";
-  lista.forEach(u=>{
-    listaUsuarios.innerHTML+=`
-    <tr>
-      <td class="user-cell"><img src="${u.avatar_url||'logo.png'}"><strong>${u.nome_usuario}</strong></td>
-      <td>${u.email}</td>
-      <td><span class="status ${u.status}">${u.status}</span></td>
-      <td>${u.tipo_assinatura||"-"}</td>
-      <td>R$ ${u.valor_assinatura||0}</td>
-      <td><button onclick="toggleStatus('${u.id}','${u.status}')">🚫</button></td>
-    </tr>`;
-  });
-}
-
-buscaUsuario.oninput=()=>{
-  const q=buscaUsuario.value.toLowerCase();
-  renderUsuarios(
-    usuariosCache.filter(u=>
-      (u.nome_usuario||"").toLowerCase().includes(q)||
-      (u.email||"").toLowerCase().includes(q)
-    )
-  );
-};
-
-async function toggleStatus(id,status){
-  await sb.from("usuarios").update({
-    status:status==="aprovado"?"bloqueado":"aprovado"
-  }).eq("id",id);
-  carregarADM();
-}
-
-carregarADM();
-</script>
+</section>
 
 </body>
 </html>
